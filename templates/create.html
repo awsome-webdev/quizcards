@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Import PDF Study Guide</title>
+    <style>
+        .card-preview { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 8px; }
+        .loading { display: none; color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Import Entomology PDF</h1>
+    
+    <form id="uploadForm">
+        <label for="pdfFile">Select Study Guide PDF:</label><br><br>
+        <input type="file" id="pdfFile" name="file" accept=".pdf" required>
+        <button type="submit">Upload and Parse</button>
+    </form>
+
+    <div id="loading" class="loading">Processing PDF... This may take a moment.</div>
+
+    <div id="result">
+        <h2>Parsed Cards</h2>
+        <div id="cardContainer"></div>
+    </div>
+
+    <script>
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('pdfFile');
+        if (!fileInput.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        // 1. UI Feedback
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('loading').innerText = "Step 1: Parsing PDF...";
+        document.getElementById('cardContainer').innerHTML = '';
+
+        try {
+            // 2. First Request: Turn PDF into JSON
+            const parseRes = await fetch('/api/parse-pdf', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!parseRes.ok) throw new Error("Failed to parse PDF");
+            const data = await parseRes.json();
+            const deck = data[0]; 
+
+            // 3. UI Feedback
+            document.getElementById('loading').innerText = "Step 2: Saving to your account...";
+            displayCards(deck.content); // Show the user what was found
+
+            // 4. Second Request: Send that JSON to the /import route
+            console.log('Deck to import:', deck);
+            const importRes = await fetch('/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(deck)
+            });
+
+            const result = await importRes.json();
+
+            if (importRes.ok && result.status === "success") {
+                alert("Import Successful!");
+                // 5. Redirect to dashboard so they can see their new cards
+                window.location.href = "/dash"; 
+            } else {
+                throw new Error(result.error || "Failed to save cards");
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error: ' + error.message);
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    });
+
+    function displayCards(cards) {
+        const container = document.getElementById('cardContainer');
+        container.innerHTML = ''; 
+
+        cards.forEach(card => {
+            const div = document.createElement('div');
+            div.className = 'card-preview';
+            
+            let imageHtml = card.image ? 
+                `<img src="${card.image}" style="max-width: 200px; display: block; margin-bottom: 10px; border-radius: 4px;">` : '';
+
+            div.innerHTML = `
+                ${imageHtml}
+                <strong>Question:</strong> ${card.question}<br>
+                <strong>Answer:</strong> <div>${card.answer}</div>
+            `;
+            container.appendChild(div);
+        });
+    }
+</script>
+</body>
+</html>

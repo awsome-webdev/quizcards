@@ -1,0 +1,22 @@
+<html>
+    <head>
+    <title>Quiz Cards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    </head>
+    <body class="bg-gray-900 flex items-center justify-center h-screen">
+        <center>
+        <form action="/register" method="POST" class=" bg-white/10 backdrop-blur-md w-[60vw] h-[70vh] rounded-[20px] border border-white/30">
+            <h1 class="text-white text-5xl m-10">Register</h1>
+            <br>
+            <input name="username" placeholder="Username" required class="scale-150 m-10 p-4 rounded-lg w-1/2 mb-6 bg-white/20 text-white placeholder-white/70 border border-white/30">>
+            <br>
+            <input name="password" placeholder="Password" type="password" required class="scale-150 m-10 p-4 rounded-lg w-1/2 mb-6 bg-white/20 text-white placeholder-white/70 border border-white/30">>
+            <br>
+            <button class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full text-2xl">Register</button>
+            <br>
+            <a href="/login" class="text-3xl m-10">Already have an account?</a>
+        </form>
+        </center>
+    </body>
+</html>

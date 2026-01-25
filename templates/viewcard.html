@@ -1,0 +1,249 @@
+<html>
+    <head>
+        <title>Quiz Cards</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="grid place-items-center grid-cols-3 grid-rows-3 bg-gray-900 text-white">
+        <div id="study-option "class="mb-10 col-start-2 col-end-2 row-start-1 row-end-1">
+            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('card')">Study Mode</button>
+            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="switchmode('test')">Test Mode</button>
+            <input type="checkbox" id="shuffle-checkbox" class="ml-10">
+            <label for="shuffle-checkbox">Shuffle Cards</label>
+        </div>
+            <button class="col-start-1 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex--; showingFront = true; showCard(currentIndex); } else { showtestquestion(--currentQuestion); }">Prev</button>
+            <div id="test" class="bg-white/10 rounded-lg border border-white/30 m-10 p-6 h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2 row-end-2">
+                <progress value="50" max="100" class="top-0px w-full mb-5" id="test-p"></progress>
+                <h1 id="q" class="text-4xl">Question</h1>
+                <div id="options" class="relative grid grid-cols-2 auto-rows-auto gap-4 mt-6 w-[100%] min-h-[30%] max-h-[70%]">
+                    <!-- Options will be populated here -->
+                    <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
+                        <p>Question1</p>
+                    </div>
+                    <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
+                        <p>Question2</p>
+                    </div>
+                    <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
+                        <p>Question3</p>
+                    </div>
+                    <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
+                        <p>Question4</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2" id="card-container">
+                <div id="front">
+                <center>
+                <p id="front-content" class="text-2xl"></p>
+                <img id="img" src="" alt="" class="max-h-[50vh] max-w-[50vw] min-h-[400px] min-w-[400px] mt-4">
+                </center>
+            </div>
+            <div id="back">
+                <center>
+                <p id="back-content" class="text-2xl"></p>
+                </center>
+            </div>
+            <center>
+            <p id="progress" class="absolute text-white text-2xl left-[45%] bottom-[25%]"></p>
+            </center>
+            </div>
+            <button class="col-start-3 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex++; showingFront = false; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }">Next</button>
+    </body>
+</html>
+<script>
+let currentmode = '';
+switchmode('card')
+let currentIndex = 0;
+let currentQuestion = 0;
+let showingFront = true;
+let cardSet = null;
+let test = [];
+const par = new URLSearchParams(window.location.search);
+const setname = par.get("setname");
+
+const frontDiv = document.getElementById('front');
+const backDiv = document.getElementById('back');
+const frontContent = document.getElementById('front-content');
+const backContent = document.getElementById('back-content');
+const cardContainer = document.getElementById('card-container');
+const cardImage = document.getElementById('img');
+
+backDiv.style.display = 'none';
+
+function showCard(index) {
+    const shuffle = document.getElementById('shuffle-checkbox').checked;
+    if (shuffle) {
+        index = Math.floor(Math.random() * cardSet.content.length);
+        currentIndex = index;
+    }
+    if (!cardSet || !cardSet.content || index < 0 || index >= cardSet.content.length) return;
+    frontContent.innerHTML = cardSet.content[index].question;
+    backContent.innerHTML = cardSet.content[index].answer;
+    cardImage.src = cardSet.content[index].image || '';
+    frontDiv.style.display = showingFront ? '' : 'none';
+    backDiv.style.display = showingFront ? 'none' : '';
+    document.getElementById('progress').textContent = `Card ${index + 1} of ${cardSet.content.length}`;
+}
+
+cardContainer.addEventListener('click', () => {
+    showingFront = !showingFront;
+    showCard(currentIndex);
+});
+
+document.addEventListener('keydown', (e) => {
+    if (!cardSet) return;
+    if (e.key === 'ArrowRight') {
+        if (currentIndex < cardSet.content.length - 1) {
+            currentIndex++;
+            showingFront = true;
+            showCard(currentIndex);
+        }
+    } else if (e.key === 'ArrowLeft') {
+        if (currentIndex > 0) {
+            currentIndex--;
+            showingFront = true;
+            showCard(currentIndex);
+        }
+    }
+});
+
+async function getcards(name) {
+    fetch(`/api/cards`)
+    .then(response => response.json())
+    .then(data => {
+        cardSet = data.find(c => c.Title === name);
+        generatetest();
+        if (cardSet && cardSet.content && cardSet.content.length > 0) {
+            currentIndex = 0;
+            showingFront = true;
+            showCard(currentIndex);
+        } else {
+            frontContent.textContent = 'No cards found.';
+            backContent.textContent = '';
+        }
+    });
+}
+function next(){
+    if (currentmode !== 'test') { currentIndex++; showingFront = false; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }
+}
+function switchmode(mode) {
+    if (mode === 'test') {
+        currentmode = mode 
+        document.getElementById('test').style.display = 'block';
+        document.getElementById('card-container').style.display = 'none';
+    }
+    else {
+        currentmode = mode
+        document.getElementById('card-container').style.display = 'block';
+        document.getElementById('test').style.display = 'none';
+    }
+}
+function generatetest(){
+    console.log(cardSet)
+    content = cardSet.content;
+    content.forEach(data => {
+        let option1, option2, option3;
+        for (let i=0; i<3; i++){
+            const randcard = content[Math.floor(Math.random() * content.length)];
+            let option = randcard.answer !== '' ? randcard.answer : randcard.image;
+            if (i === 0) option1 = option;
+            else if (i === 1) option2 = option;
+            else option3 = option;
+        }
+        json = {
+            question: data.question === '' ? data.image : data.question,
+            answer: data.answer,
+            options: [option1, option2, option3]
+        };
+        test.push(json);
+        //console.log(json);
+    });
+    const progress = document.getElementById('test-p')
+    progress.setAttribute('max', test.length)
+    showtestquestion(23);
+}
+function showtestquestion(index){
+    if (!test || index < 0 || index >= test.length) return;
+    
+    currentQuestion = index; // Update global index
+    
+    // Update Progress Bar
+    const progress = document.getElementById('test-p');
+    progress.setAttribute('value', index);
+
+    const q = test[index];
+    const parent = document.getElementById('options');
+    const question = document.getElementById('q');
+
+    // Shuffle options
+    let alloptions = [...q.options, q.answer];
+    alloptions.sort(() => Math.random() - 0.5);
+
+    // Render Question
+    question.innerHTML = q.question.startsWith('data:image') 
+        ? `<img src="${q.question}" class="max-h-[30vh] max-w-[30vw] mx-auto rounded-lg">` 
+        : q.question;
+
+    parent.innerHTML = '';
+
+    // Generate Buttons
+    alloptions.forEach(opt => {
+        // We encode the answer to make it safe for HTML attributes
+        const safeValue = opt.replace(/"/g, '&quot;'); 
+
+        parent.innerHTML += `
+            <div 
+                data-val="${safeValue}" 
+                class="bg-white/20 rounded-lg border border-white/30 flex flex-col items-center justify-center hover:bg-white/30 hover:cursor-pointer p-4 transition-all" 
+                onclick="check(this)"
+            >
+                <div class="pointer-events-none">
+                    ${truncateToDetails(opt)}
+                </div>
+            </div>
+        `;
+    });
+}
+function check(ele){
+    // Reset borders on all siblings (optional, if you want to allow re-guessing)
+    const allOptions = document.getElementById('options').children;
+    for (let child of allOptions) {
+        child.classList.remove('border-green-500', 'border-red-500', 'bg-green-500/20', 'bg-red-500/20');
+        child.classList.add('border-white/30'); // Reset to default
+    }
+
+    // Get the clean answer from the data attribute
+    let selected = ele.getAttribute('data-val');
+    let answerq = test[currentQuestion].answer;
+
+    // Compare
+    if (selected === answerq) {
+        ele.classList.remove('border-white/30');
+        ele.classList.add('border-green-500', 'bg-green-500/20');
+        
+        // Optional: Auto-advance after 1 second
+        // setTimeout(() => next(), 1000); 
+    } else {
+        ele.classList.remove('border-white/30');
+        ele.classList.add('border-red-500', 'bg-red-500/20');
+    }
+}
+getcards(setname);
+function truncateToDetails(text, lineLimit = 3) {
+    if (text.startsWith('data:image') || text.startsWith('http')) return text;
+    
+    // Split logic... (same as before)
+    const lines = text.split(/<br\s*\/?>/i);
+    if (lines.length <= lineLimit) return text;
+
+    const visibleLines = lines.slice(0, lineLimit).join('<br>');
+    const hiddenLines = lines.slice(lineLimit).join('<br>');
+
+    return `
+        <span>${visibleLines}</span>
+        <details class="mt-2 cursor-pointer text-sm text-white/60" onclick="event.stopPropagation()">
+            <summary class="hover:text-white text-white">Show More...</summary>
+            <div class="mt-1 text-white border-t border-white/10 pt-1">${hiddenLines}</div>
+        </details>
+    `;
+}
+</script>
