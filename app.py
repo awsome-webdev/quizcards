@@ -161,49 +161,66 @@ def parse_hybrid_quizlet_pdf(pdf_stream):
     extracted_images = []
     text_blocks = []
 
-    # 1. Extract all images from the document
+    # 1. Extract images (keeping your original logic)
     for page in doc:
         for img in page.get_images(full=True):
             xref = img[0]
             base_image = doc.extract_image(xref)
-            # Filter out tiny icons/bullet points
             if len(base_image["image"]) > 2000:
                 b64 = base64.b64encode(base_image["image"]).decode('utf-8')
                 extracted_images.append(f"data:image/{base_image['ext']};base64,{b64}")
 
-    # 2. Extract all text blocks
+    # 2. Extract and Filter Text
     full_text = ""
     for page in doc:
         full_text += page.get_text() + "\n"
 
-    # Split by Quizlet's numbering (e.g., "1. ", "2. ")
     raw_segments = re.split(r'\n\d+\.\s+', full_text)
+    # Extract global title
     title = raw_segments[0].split('\n')[0].strip() if raw_segments else "Imported Set"
     
     for segment in raw_segments[1:]:
+        # Split into lines and strip whitespace
         lines = [l.strip() for l in segment.split('\n') if l.strip()]
-        if lines:
-            text_blocks.append(lines)
+        
+        # --- NEW FILTERING LOGIC ---
+        cleaned_lines = []
+        for line in lines:
+            # 1. Remove Card Counts (e.g., "5 / 28")
+            if re.match(r'^\d+\s*/\s*\d+$', line):
+                continue
+            # 2. Remove Quizlet URLs and "Study online at"
+            if "quizlet.com" in line.lower() or "study online at" in line.lower():
+                continue
+            # 3. Remove the Set Title if it repeats on every card
+            if line.lower() == title.lower():
+                continue
+            
+            cleaned_lines.append(line)
+        # ---------------------------
 
-    # 3. Decision Engine: How do we pair them?
+        if cleaned_lines:
+            text_blocks.append(cleaned_lines)
+
+    # 3. Pair them up
     final_cards = []
     
-    # Case A: We have images that likely correspond to the text
     if len(extracted_images) >= len(text_blocks) and len(text_blocks) > 0:
-        for i in range(len(text_blocks)):
+        for i in range(min(len(text_blocks), len(extracted_images))):
             final_cards.append({
                 "question": "", 
-                "image": extracted_images[i], # Image is the Question
-                "answer": " <br> ".join(text_blocks[i]) # All text is the Answer
+                "image": extracted_images[i],
+                "answer": " <br> ".join(text_blocks[i]) # Cleaned text here
             })
             
-    # Case B: No images, or purely text-based Quizlet set
     else:
         for lines in text_blocks:
+            # lines[0] is now the "Cabbage Looper" instead of the junk
+            answer = " <br> ".join(lines[1:]) if len(lines) > 1 else "No definition"
             final_cards.append({
-                "question": lines[0], # First line is Question
+                "question": lines[0],
                 "image": None,
-                "answer": " <br> ".join(lines[1:]) if len(lines) > 1 else "No definition"
+                "answer": answer
             })
 
     return title, final_cards
@@ -307,6 +324,7 @@ def parse_pdf():
         return jsonify({"error": "No file part"}), 400
     
     file = request.files['file']
+    desc = request.form.get('desc')
     try:
         # Use the hybrid parser
         title, cards = parse_hybrid_quizlet_pdf(file)
@@ -314,7 +332,7 @@ def parse_pdf():
         return jsonify([{
             "Title": title or "Imported Set",
             "cards": len(cards),
-            "description": "Flashcards automatically detected and paired.",
+            "description": desc or "imported set from pdf",
             "content": cards
         }])
     except Exception as e:

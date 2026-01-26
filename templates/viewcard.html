@@ -4,14 +4,19 @@
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="grid place-items-center grid-cols-3 grid-rows-3 bg-gray-900 text-white">
-        <div id="study-option "class="mb-10 col-start-2 col-end-2 row-start-1 row-end-1">
+        <div id="study-option "class="w-[60vw] mb-10 col-start-2 col-end-2 row-start-1 row-end-1">
+            <center>
             <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('card')">Study Mode</button>
-            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="switchmode('test')">Test Mode</button>
+            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('test')">Test Mode</button>
+            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="shuffletest()">Shuffle Test</button>
             <input type="checkbox" id="shuffle-checkbox" class="ml-10">
             <label for="shuffle-checkbox">Shuffle Cards</label>
+            </center>
         </div>
-            <button class="col-start-1 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex--; showingFront = true; showCard(currentIndex); } else { showtestquestion(--currentQuestion); }">Prev</button>
-            <div id="test" class="bg-white/10 rounded-lg border border-white/30 m-10 p-6 h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2 row-end-2">
+            <button id="prev-button" class="col-start-1 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex--; showingFront = true; showCard(currentIndex); } else { showtestquestion(--currentQuestion); }">Prev</button>
+            <div id="test" class="relative bg-white/10 rounded-lg border border-white/30 m-10 h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2 row-end-2">
+                <div id="timer" class="pointer-events-none absolute z-10 left-[0px] top-[0px] w-[0%] h-[100%] bg-green-500/10"></div>
+                <div class="w-full top-[0px] left-[0px] max-h-[100%] p-6 overflow-y-scroll">
                 <progress value="50" max="100" class="top-0px w-full mb-5" id="test-p"></progress>
                 <h1 id="q" class="text-4xl">Question</h1>
                 <div id="options" class="relative grid grid-cols-2 auto-rows-auto gap-4 mt-6 w-[100%] min-h-[30%] max-h-[70%]">
@@ -28,6 +33,7 @@
                     <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
                         <p>Question4</p>
                     </div>
+                </div>
                 </div>
             </div>
             <div class="bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2" id="card-container">
@@ -46,8 +52,8 @@
             <p id="progress" class="absolute text-white text-2xl left-[45%] bottom-[25%]"></p>
             </center>
             </div>
-            <button class="col-start-3 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex++; showingFront = false; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }">Next</button>
-    </body>
+            <button id="next-button" class="col-start-3 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex++; showingFront = true; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }">Next</button>
+    </body> 
 </html>
 <script>
 let currentmode = '';
@@ -57,8 +63,10 @@ let currentQuestion = 0;
 let showingFront = true;
 let cardSet = null;
 let test = [];
+let timerInterval = null;
 const par = new URLSearchParams(window.location.search);
 const setname = par.get("setname");
+const timerBar = document.getElementById('timer');
 
 const frontDiv = document.getElementById('front');
 const backDiv = document.getElementById('back');
@@ -130,11 +138,15 @@ function switchmode(mode) {
         currentmode = mode 
         document.getElementById('test').style.display = 'block';
         document.getElementById('card-container').style.display = 'none';
+        document.getElementById('prev-button').style.display = 'none';
+        document.getElementById('next-button').style.display = 'none';
     }
     else {
         currentmode = mode
         document.getElementById('card-container').style.display = 'block';
         document.getElementById('test').style.display = 'none';
+        document.getElementById('prev-button').style.display = 'block';
+        document.getElementById('next-button').style.display = 'block'
     }
 }
 function generatetest(){
@@ -152,14 +164,18 @@ function generatetest(){
         json = {
             question: data.question === '' ? data.image : data.question,
             answer: data.answer,
-            options: [option1, option2, option3]
+            options: [option1, option2, option3],
+            userans: '',
+            right: 0
         };
         test.push(json);
         //console.log(json);
     });
     const progress = document.getElementById('test-p')
     progress.setAttribute('max', test.length)
-    showtestquestion(23);
+    console.log('Test object:')
+    console.log(test)
+    showtestquestion(0);
 }
 function showtestquestion(index){
     if (!test || index < 0 || index >= test.length) return;
@@ -219,14 +235,77 @@ function check(ele){
     if (selected === answerq) {
         ele.classList.remove('border-white/30');
         ele.classList.add('border-green-500', 'bg-green-500/20');
-        
-        // Optional: Auto-advance after 1 second
-        // setTimeout(() => next(), 1000); 
+        const ele2 = document.getElementById('test')
+        ele2.classList.remove('bg-white/10')
+        ele2.classList.add('bg-green-500/10')
+        ele2.classList.remove('border-white/30')
+        ele2.classList.add('border-green-500/20')
+        const right = document.querySelector('div[data-val="'+ answerq +'"]')
+        right.classList.remove('bg-white/10')
+        right.classList.add('bg-green-500/30')
+        right.classList.remove('border-white/30')
+        right.classList.add('border-green-500/20')
+        startTimer(2, 'green')
+        test[currentQuestion].right++
+        test[currentQuestion].userans = 'r'
     } else {
+        const ele2 = document.getElementById('test')
+        ele2.classList.remove('border-white/30')
+        ele2.classList.add('border-red-500/20')
         ele.classList.remove('border-white/30');
         ele.classList.add('border-red-500', 'bg-red-500/20');
+        ele2.classList.remove('bg-white/10')
+        ele2.classList.add('bg-red-500/10')
+        const right = document.querySelector('div[data-val="'+ answerq +'"]')
+        right.classList.remove('bg-white/10')
+        right.classList.add('bg-green-500/30')
+        right.classList.remove('border-white/30')
+        right.classList.add('border-green-500/20')
+        startTimer(2, 'red')
+        test[currentQuestion].right--
+        test[currentQuestion].userans = 'w'
     }
+    console.log(test)
 }
+function startTimer(seconds, color) {
+    // Clear any existing timer first
+    clearInterval(timerInterval);
+    
+    // Reset bar to full width
+    timerBar.style.width = '100%';
+    
+    // 1. CLEAN UP: Remove BOTH possible color classes to prevent mixing
+    timerBar.classList.remove('bg-red-500/10', 'bg-green-500/10'); 
+    
+    // 2. ADD NEW COLOR: Add the requested color
+    // Note: We use 'green' as a string fallback, not a variable
+    const colorName = color || 'green';
+    timerBar.classList.add(`bg-${colorName}-500/10`);
+    
+    const totalTime = seconds * 1000; 
+    let timeLeft = totalTime;
+    const intervalRate = 10; 
+
+    timerInterval = setInterval(() => {
+        timeLeft -= intervalRate;
+        const percentage = (timeLeft / totalTime) * 100;
+        timerBar.style.width = `${percentage}%`;
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            timerBar.style.width = '0%';
+            
+            // Trigger next question
+            showtestquestion(++currentQuestion);
+            
+            // Reset card styles
+            const ele2 = document.getElementById('test');
+            ele2.classList.remove('border-red-500/20', 'border-green-500/20', 'bg-green-500/10', 'bg-red-500/10');
+            ele2.classList.add('border-white/30', 'bg-white/10');
+        }
+    }, intervalRate);
+}
+
 getcards(setname);
 function truncateToDetails(text, lineLimit = 3) {
     if (text.startsWith('data:image') || text.startsWith('http')) return text;
@@ -245,5 +324,10 @@ function truncateToDetails(text, lineLimit = 3) {
             <div class="mt-1 text-white border-t border-white/10 pt-1">${hiddenLines}</div>
         </details>
     `;
+}
+function shuffletest(){
+    test.sort(() => Math.random() - 0.5);
+    currentQuestion = 0;
+    showtestquestion(0);
 }
 </script>

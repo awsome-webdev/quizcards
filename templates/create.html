@@ -2,21 +2,25 @@
 <html lang="en">
 <head>
     <title>Import PDF Study Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .card-preview { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 8px; }
         .loading { display: none; color: blue; }
     </style>
 </head>
-<body>
-    <h1>Import Entomology PDF</h1>
+<body class="text-white">
     
-    <form id="uploadForm">
-        <label for="pdfFile">Select Study Guide PDF:</label><br><br>
-        <input type="file" id="pdfFile" name="file" accept=".pdf" required>
-        <button type="submit">Upload and Parse</button>
+    <form id="uploadForm" class="bg-white/10 backdrop-blur-md border-white/20 rounded-md m-5 p-5 w-fit">
+        <center>
+        <h1 class="text-white text-2xl">Import PDF from quizlet:</h1><br>
+        <label for="pdfFile" class="hover:cursor-pointer bg-white/10 backdrop-blur-md border-white/20 p-3 m-5 ml-10 rounded-md">Choose file</label><br><br>
+        <input type="file" id="pdfFile" name="file" accept=".pdf" required class="hidden">
+        <textarea id="desc" placeholder="Description" class="bg-white/10 backdrop-blur-md rounded-md border-white/40 p-3"></textarea><br>
+        <button type="submit" class="hover:cursor-pointer bg-white/10 backdrop-blur-md border-white/20 p-3 ml-10 m-5 rounded-md">Upload</button>
+        </center>
     </form>
 
-    <div id="loading" class="loading">Processing PDF... This may take a moment.</div>
+    <div id="loading" class="loading text-xl">Processing PDF... This may take a moment.</div>
 
     <div id="result">
         <h2>Parsed Cards</h2>
@@ -28,10 +32,12 @@
         e.preventDefault();
         
         const fileInput = document.getElementById('pdfFile');
+        const description = document.getElementById('desc').value
         if (!fileInput.files[0]) return;
 
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
+        formData.append('desc', description)
 
         // 1. UI Feedback
         document.getElementById('loading').style.display = 'block';
@@ -66,7 +72,7 @@
             if (importRes.ok && result.status === "success") {
                 alert("Import Successful!");
                 // 5. Redirect to dashboard so they can see their new cards
-                window.location.href = "/dash"; 
+                //window.location.href = "/dash"; 
             } else {
                 throw new Error(result.error || "Failed to save cards");
             }
