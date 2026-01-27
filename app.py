@@ -306,10 +306,20 @@ def search(query, type="web"):
 @app.route('/')
 @login_required
 def home():
+    user_agent = request.headers.get('User-Agent').lower()
+    mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'phone']
+    is_mobile = any(keyword in user_agent for keyword in mobile_keywords)
+    if is_mobile:
+        return render_template('index-mobile.html')
     return render_template('index.html')
 
 @app.route('/dash')
 def dash():
+    user_agent = request.headers.get('User-Agent').lower()
+    mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'phone']
+    is_mobile = any(keyword in user_agent for keyword in mobile_keywords)
+    if is_mobile:
+        return render_template('dash-mobile.html')
     return render_template('dash.html')
 
 @app.route('/create')
@@ -368,6 +378,11 @@ def import_set():
 
 @app.route('/viewcard')
 def viewcard():
+    user_agent = request.headers.get('User-Agent').lower()
+    mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'phone']
+    is_mobile = any(keyword in user_agent for keyword in mobile_keywords)
+    if is_mobile:
+        return render_template('viewcard-mobile.html')
     return render_template('viewcard.html')
 
 @app.route('/api/cards')

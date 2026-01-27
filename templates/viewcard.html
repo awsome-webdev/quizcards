@@ -77,9 +77,9 @@ const cardImage = document.getElementById('img');
 
 backDiv.style.display = 'none';
 
-function showCard(index) {
+function showCard(index, event=false) {
     const shuffle = document.getElementById('shuffle-checkbox').checked;
-    if (shuffle) {
+    if (shuffle && !event) {
         index = Math.floor(Math.random() * cardSet.content.length);
         currentIndex = index;
     }
@@ -94,7 +94,7 @@ function showCard(index) {
 
 cardContainer.addEventListener('click', () => {
     showingFront = !showingFront;
-    showCard(currentIndex);
+    showCard(currentIndex, event=true);
 });
 
 document.addEventListener('keydown', (e) => {
