@@ -301,8 +301,20 @@ def search(query, type="web"):
     else:
         return None
 
-# --- Routes ---
-
+@app.route('/api/delete')
+def delete():
+    name = request.args.get('name')
+    data = readjson(f'user_data/{current_user.id}/cards.json')
+    target = -1
+    for x in range(len(data)):
+        if data[x]["Title"] == name:
+            target = x
+            break
+    data.pop(target)
+    with open(f'user_data/{current_user.id}/cards.json', 'w') as f:
+        json.dump(data, f, indent=4)
+    return redirect(url_for('dash'))
+    
 @app.route('/')
 @login_required
 def home():
@@ -314,6 +326,7 @@ def home():
     return render_template('index.html')
 
 @app.route('/dash')
+@login_required
 def dash():
     user_agent = request.headers.get('User-Agent').lower()
     mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'phone']
@@ -323,6 +336,7 @@ def dash():
     return render_template('dash.html')
 
 @app.route('/create')
+@login_required
 def create():
     return render_template('create.html')
 
@@ -377,6 +391,7 @@ def import_set():
 
 
 @app.route('/viewcard')
+@login_required
 def viewcard():
     user_agent = request.headers.get('User-Agent').lower()
     mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'phone']
@@ -386,6 +401,7 @@ def viewcard():
     return render_template('viewcard.html')
 
 @app.route('/api/cards')
+@login_required
 def get_cards():
     if not current_user.is_authenticated:
         return jsonify([])
@@ -444,4 +460,4 @@ def login():
     return render_template("login.html")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, host='0.0.0.0')

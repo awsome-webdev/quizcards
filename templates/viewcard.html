@@ -38,9 +38,9 @@
             </div>
             <div class="bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2" id="card-container">
                 <div id="front">
-                <center>
+                <center class="w-[100%] h-[100%]">
                 <p id="front-content" class="text-2xl"></p>
-                <img id="img" src="" alt="" class="max-h-[50vh] max-w-[50vw] min-h-[400px] min-w-[400px] mt-4">
+                <img id="img" src="" alt="" class="max-h-[70%] max-w-[70%] mt-4">
                 </center>
             </div>
             <div id="back">
@@ -150,7 +150,6 @@ function switchmode(mode) {
     }
 }
 function generatetest(){
-    console.log(cardSet)
     content = cardSet.content;
     content.forEach(data => {
         let option1, option2, option3;
@@ -169,12 +168,9 @@ function generatetest(){
             right: 0
         };
         test.push(json);
-        //console.log(json);
     });
     const progress = document.getElementById('test-p')
     progress.setAttribute('max', test.length)
-    console.log('Test object:')
-    console.log(test)
     showtestquestion(0);
 }
 function showtestquestion(index){
@@ -196,7 +192,7 @@ function showtestquestion(index){
 
     // Render Question
     question.innerHTML = q.question.startsWith('data:image') 
-        ? `<img src="${q.question}" class="max-h-[30vh] max-w-[30vw] mx-auto rounded-lg">` 
+        ? `<img src="${q.question}" class="max-h-[30%] max-w-[30%] mx-auto rounded-lg">` 
         : q.question;
 
     parent.innerHTML = '';
@@ -265,7 +261,6 @@ function check(ele){
         test[currentQuestion].right--
         test[currentQuestion].userans = 'w'
     }
-    console.log(test)
 }
 function startTimer(seconds, color) {
     // Clear any existing timer first
