@@ -155,24 +155,27 @@ function generatetest(){
         return;
     }
     let content = cardSet.content;
-    content.forEach(data => {
-        let option1, option2, option3;
-        for (let i=0; i<3; i++){
-            const randcard = content[Math.floor(Math.random() * content.length)];
-            let option = randcard.answer !== '' ? randcard.answer : randcard.image;
-            if (i === 0) option1 = option;
-            else if (i === 1) option2 = option;
-            else option3 = option;
-        }
-        json = {
-            question: data.question === '' ? data.image : data.question,
-            answer: data.answer,
-            options: [option1, option2, option3],
-            userans: '',
-            right: 0
-        };
-        test.push(json);
-    });
+content.forEach(data => {
+    // 1. Get all possible answers EXCEPT the correct one for this specific card
+    let wrongOptions = content
+        .filter(card => card.answer !== data.answer)
+        .map(card => card.answer !== '' ? card.answer : card.image);
+
+    // 2. Shuffle the wrong options list
+    wrongOptions.sort(() => Math.random() - 0.5);
+
+    // 3. Pick the first 3 unique ones
+    let options = wrongOptions.slice(0, 3);
+
+    let json = {
+        question: data.question === '' ? data.image : data.question,
+        answer: data.answer !== '' ? data.answer : data.image,
+        options: options, // These are your 3 "wrong" choices
+        userans: '',
+        right: 0
+    };
+    test.push(json);
+});
     const progress = document.getElementById('test-p')
     progress.setAttribute('max', test.length)
     showtestquestion(0);
