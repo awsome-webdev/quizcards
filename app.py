@@ -178,6 +178,7 @@ def parse_hybrid_quizlet_pdf(pdf_stream):
     raw_segments = re.split(r'\n\d+\.\s+', full_text)
     # Extract global title
     title = raw_segments[0].split('\n')[0].strip() if raw_segments else "Imported Set"
+    title = title.replace('&', 'and').replace('?', '')
     
     for segment in raw_segments[1:]:
         # Split into lines and strip whitespace
