@@ -65,7 +65,7 @@ let cardSet = null;
 let test = [];
 let timerInterval = null;
 const par = new URLSearchParams(window.location.search);
-const setname = par.get("setname");
+const setname = decodeURIComponent(par.get("setname"));
 const timerBar = document.getElementById('timer');
 
 const frontDiv = document.getElementById('front');
@@ -115,11 +115,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function getcards(name) {
-    fetch(`/api/cards`)
+    await fetch(`/api/cards`)
     .then(response => response.json())
     .then(data => {
         cardSet = data.find(c => c.Title === name);
-        generatetest();
         if (cardSet && cardSet.content && cardSet.content.length > 0) {
             currentIndex = 0;
             showingFront = true;
@@ -129,6 +128,7 @@ async function getcards(name) {
             backContent.textContent = '';
         }
     });
+    generatetest();
 }
 function next(){
     if (currentmode !== 'test') { currentIndex++; showingFront = false; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }
@@ -150,7 +150,11 @@ function switchmode(mode) {
     }
 }
 function generatetest(){
-    content = cardSet.content;
+    if (!cardSet || !cardSet.content) {
+        console.warn("cardSet not loaded yet. Skipping test generation.");
+        return;
+    }
+    let content = cardSet.content;
     content.forEach(data => {
         let option1, option2, option3;
         for (let i=0; i<3; i++){

@@ -37,7 +37,7 @@ loadcards();
     }
     function createcard(Title, cards, desc) {
         const div = document.createElement("div");
-        div.className = "bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-[40vh] w-[20vw] grid grid-rows-[1fr_10px_1fr]"
+        div.className = "bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-[40vh] w-[20vw] h-fit grid grid-rows-[1fr_1fr]"
         div.innerHTML = `
         <div class="row-start-1 row-end-1" onclick="opencards('${Title}')">
             <h2 class="text-2xl mb-4">${Title}</h2>
@@ -45,8 +45,8 @@ loadcards();
             <br>
             <p class="text-white/70">${desc}</p>
         </div>
-        <div class="row-start-3 grid grid-cols-2">
-            <button class="bg-red-400/10 p-5 h-fit rounded-md bottom-[0px]" onclick="deleteset('${Title}')">Delete</button>
+        <div class="row-start-2 grid grid-cols-2">
+            <button class="bg-red-400/10 p-6 h-fit rounded-md bottom-[0px]" onclick="deleteset('${Title}')">Delete</button>
         </div>
         `
         document.getElementById("cards").appendChild(div);
