@@ -13,7 +13,7 @@
             <label for="shuffle-checkbox">Shuffle Cards</label>
             </center>
         </div>
-            <button id="prev-button" class="col-start-1 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex--; showingFront = true; showCard(currentIndex); } else { showtestquestion(--currentQuestion); }">Prev</button>
+            <button id="prev-button" class="col-start-1 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md mr-[5%]" onclick="if (currentmode !== 'test') { currentIndex--; showingFront = true; showCard(currentIndex); } else { showtestquestion(--currentQuestion); }">Prev</button>
             <div id="test" class="relative bg-white/10 rounded-lg border border-white/30 m-10 h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2 row-end-2">
                 <div id="timer" class="pointer-events-none absolute z-10 left-[0px] top-[0px] w-[0%] h-[100%] bg-green-500/10"></div>
                 <div class="w-full top-[0px] left-[0px] max-h-[100%] p-6 overflow-y-scroll">
@@ -36,6 +36,19 @@
                 </div>
                 </div>
             </div>
+            <div id="counter" class="absolute right-[2vw] top-1/2 -translate-y-1/2 flex flex-col justify-center gap-8 bg-white/10 backdrop-blur-md rounded-lg border border-white/30 p-8 h-[50vh] w-[12vw] z-20">
+                <div class="text-center mt-[5%]">
+                    <p class="text-sm uppercase tracking-widest opacity-60">Wrong</p>
+                    <p id="wrong" class="text-5xl font-bold text-red-500">0</p>
+                </div>
+
+                <hr class="border borer-white w-[98%] mx-auto my-5">
+            
+                <div class="text-center mt-[5%]">
+                    <p class="text-sm uppercase tracking-widest opacity-60">Right</p>
+                    <p id="right" class="text-5xl font-bold text-green-500">0</p>
+                </div>
+            </div>
             <div class="bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2" id="card-container">
                 <div id="front">
                 <center class="w-[100%] h-[100%]">
@@ -52,10 +65,12 @@
             <p id="progress" class="absolute text-white text-2xl left-[45%] bottom-[25%]"></p>
             </center>
             </div>
-            <button id="next-button" class="col-start-3 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex++; showingFront = true; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }">Next</button>
+            <button id="next-button" class="col-start-3 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md ml-[5%]" onclick="if (currentmode !== 'test') { currentIndex++; showingFront = true; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }">Next</button>
     </body> 
 </html>
 <script>
+let wrongq = 0;
+let rightq = 0; 
 let currentmode = '';
 switchmode('card')
 let currentIndex = 0;
@@ -76,7 +91,10 @@ const cardContainer = document.getElementById('card-container');
 const cardImage = document.getElementById('img');
 
 backDiv.style.display = 'none';
-
+function updatecount(){
+    document.getElementById('wrong').textContent = wrongq
+    document.getElementById('right').textContent = rightq
+}
 function showCard(index, event=false) {
     const shuffle = document.getElementById('shuffle-checkbox').checked;
     if (shuffle && !event) {
@@ -140,6 +158,7 @@ function switchmode(mode) {
         document.getElementById('card-container').style.display = 'none';
         document.getElementById('prev-button').style.display = 'none';
         document.getElementById('next-button').style.display = 'none';
+        document.getElementById('counter').style.display = 'block'
     }
     else {
         currentmode = mode
@@ -147,6 +166,7 @@ function switchmode(mode) {
         document.getElementById('test').style.display = 'none';
         document.getElementById('prev-button').style.display = 'block';
         document.getElementById('next-button').style.display = 'block'
+        document.getElementById('counter').style.display = 'none'
     }
 }
 function generatetest(){
@@ -251,6 +271,7 @@ function check(ele){
         startTimer(2, 'green')
         test[currentQuestion].right++
         test[currentQuestion].userans = 'r'
+        rightq++
     } else {
         const ele2 = document.getElementById('test')
         ele2.classList.remove('border-white/30')
@@ -267,12 +288,14 @@ function check(ele){
         startTimer(2, 'red')
         test[currentQuestion].right--
         test[currentQuestion].userans = 'w'
+        wrongq++
     }
+    updatecount()
 }
 function startTimer(seconds, color) {
     // Clear any existing timer first
     clearInterval(timerInterval);
-    
+    document.getElementById('test').classList.add('pointer-events-none')
     // Reset bar to full width
     timerBar.style.width = '100%';
     
@@ -287,7 +310,6 @@ function startTimer(seconds, color) {
     const totalTime = seconds * 1000; 
     let timeLeft = totalTime;
     const intervalRate = 10; 
-
     timerInterval = setInterval(() => {
         timeLeft -= intervalRate;
         const percentage = (timeLeft / totalTime) * 100;
@@ -299,7 +321,7 @@ function startTimer(seconds, color) {
             
             // Trigger next question
             showtestquestion(++currentQuestion);
-            
+            document.getElementById('test').classList.remove('pointer-events-none')
             // Reset card styles
             const ele2 = document.getElementById('test');
             ele2.classList.remove('border-red-500/20', 'border-green-500/20', 'bg-green-500/10', 'bg-red-500/10');
@@ -332,4 +354,25 @@ function shuffletest(){
     currentQuestion = 0;
     showtestquestion(0);
 }
+window.addEventListener('beforeunload', (event) => {
+    let test2 = [];
+    test.forEach(function(item){
+        if (item['userans'] !== ''){
+            test2.push(item)
+        }
+    })
+if (test2.length > 0 || rightq > 0 || wrongq > 0) {
+        fetch('/api/savetest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                setname: setname,
+                right: rightq, 
+                wrong: wrongq,
+                test: test2
+            }),
+            keepalive: true
+        });
+    }
+});
 </script>

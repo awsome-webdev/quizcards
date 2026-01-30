@@ -301,7 +301,49 @@ def search(query, type="web"):
         return data.get('news', {}).get('results', [])
     else:
         return None
+@app.route('/api/savetest', methods=["POST"])
+def savetest():
+    incoming_data = request.json
+    file_path = f'{root}user_data/{current_user.id}/stats.json'
 
+    try:
+        with open(file_path, 'r') as f:
+            current_stats = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        current_stats = {"right": 0, "wrong": 0, "questions": []}
+
+    current_stats['right'] += int(incoming_data.get('right', 0))
+    current_stats['wrong'] += int(incoming_data.get('wrong', 0))
+    
+    if 'test' in incoming_data:
+        current_stats['questions'].extend(incoming_data['test'])
+
+    with open(file_path, 'w') as f:
+        json.dump(current_stats, f, indent=4)
+
+    return 'ok', 200
+@app.route('/api/leaderboard')
+def leaderboard():
+    print('test')
+    root_dir = f'{root}user_data'
+    f = open(f'{root}/users.json', 'r')
+    userDB = json.load(f)
+    users = []
+    folders = [f for f in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, f))]
+    for x in folders:
+        try:
+            with open(f'{root_dir}/{x}/stats.json', 'r') as f:
+                data = json.load(f)
+                match = [u for u in userDB if u['id'] == x]
+                userOBJ = match[0] if match else None
+                user = {"user": userOBJ['username'], "right" : data['right']}
+                users.append(user)
+        except Exception as e:
+                user = {"user": userOBJ['username'], "right" : 0}
+                users.append(user)
+    users.sort(key=lambda x: x['right'], reverse=True)
+    f.close()
+    return jsonify(users), 200
 @app.route('/api/delete')
 def delete():
     name = request.args.get('name')
@@ -325,6 +367,11 @@ def home():
     if is_mobile:
         return render_template('index-mobile.html')
     return render_template('index.html')
+
+@app.route('/leaderboard')
+@login_required
+def leaderboard2():
+    return render_template('leaderboard.html')
 
 @app.route('/dash')
 @login_required

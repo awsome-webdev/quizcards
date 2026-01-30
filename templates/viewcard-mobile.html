@@ -56,6 +56,8 @@
     </body> 
 </html>
 <script>
+let wrongq = 0;
+let rightq = 0; 
 let currentmode = '';
 switchmode('card')
 let currentIndex = 0;
@@ -76,7 +78,9 @@ const cardContainer = document.getElementById('card-container');
 const cardImage = document.getElementById('img');
 
 backDiv.style.display = 'none';
-
+function updatecount(){
+    //do nothing for now
+}
 function showCard(index, event=false) {
     const shuffle = document.getElementById('shuffle-checkbox').checked;
     if (shuffle && !event) {
@@ -248,6 +252,7 @@ function check(ele){
         startTimer(2, 'green')
         test[currentQuestion].right++
         test[currentQuestion].userans = 'r'
+        rightq++
     } else {
         const ele2 = document.getElementById('test')
         ele2.classList.remove('border-white/30')
@@ -264,13 +269,14 @@ function check(ele){
         startTimer(2, 'red')
         test[currentQuestion].right--
         test[currentQuestion].userans = 'w'
+        wrongq++
     }
-    console.log(test)
+    updatecount()
 }
 function startTimer(seconds, color) {
     // Clear any existing timer first
     clearInterval(timerInterval);
-    
+    document.getElementById('test').classList.add('pointer-events-none')
     // Reset bar to full width
     timerBar.style.width = '100%';
     
@@ -296,6 +302,7 @@ function startTimer(seconds, color) {
             timerBar.style.width = '0%';
             
             // Trigger next question
+            document.getElementById('test').classList.remove('pointer-events-none')
             showtestquestion(++currentQuestion);
             
             // Reset card styles
@@ -330,4 +337,25 @@ function shuffletest(){
     currentQuestion = 0;
     showtestquestion(0);
 }
+window.addEventListener('beforeunload', (event) => {
+    let test2 = [];
+    test.forEach(function(item){
+        if (item['userans'] !== ''){
+            test2.push(item)
+        }
+    })
+if (test2.length > 0 || rightq > 0 || wrongq > 0) {
+        fetch('/api/savetest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                setname: setname,
+                right: rightq, 
+                wrong: wrongq,
+                test: test2
+            }),
+            keepalive: true
+        });
+    }
+});
 </script>
