@@ -324,26 +324,50 @@ def savetest():
     return 'ok', 200
 @app.route('/api/leaderboard')
 def leaderboard():
-    print('test')
-    root_dir = f'{root}user_data'
-    f = open(f'{root}/users.json', 'r')
-    userDB = json.load(f)
-    users = []
-    folders = [f for f in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, f))]
-    for x in folders:
-        try:
-            with open(f'{root_dir}/{x}/stats.json', 'r') as f:
-                data = json.load(f)
-                match = [u for u in userDB if u['id'] == x]
-                userOBJ = match[0] if match else None
-                user = {"user": userOBJ['username'], "right" : data['right']}
-                users.append(user)
-        except Exception as e:
-                user = {"user": userOBJ['username'], "right" : 0}
-                users.append(user)
-    users.sort(key=lambda x: x['right'], reverse=True)
-    f.close()
-    return jsonify(users), 200
+    # Use os.path.join to handle Linux paths correctly
+    root_dir = os.path.join(root, 'user_data') 
+    
+    # Load User DB
+    try:
+        with open(os.path.join(root, 'users.json'), 'r') as f:
+            userDB = json.load(f)
+    except Exception:
+        return jsonify([]), 500
+
+    leaderboard_list = []
+    
+    # Get all folder names in user_data
+    if os.path.exists(root_dir):
+        folders = [f for f in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, f))]
+        
+        for x in folders:
+            # 1. Look up user first (Outside the try block for the file)
+            match = [u for u in userDB if u.get('id') == x]
+            userOBJ = match[0] if match else None
+            username = userOBJ['username'] if userOBJ else f"Unknown ({x[:5]})"
+
+            # 2. Try to read the stats
+            stats_path = os.path.join(root_dir, x, 'stats.json')
+            
+            if os.path.exists(stats_path):
+                try:
+                    with open(stats_path, 'r') as f:
+                        data = json.load(f)
+                        leaderboard_list.append({
+                            "user": username,
+                            "right": data.get('right', 0)
+                        })
+                except Exception:
+                    # File exists but is corrupted
+                    leaderboard_list.append({"user": username, "right": 0})
+            else:
+                # File doesn't exist (like your 6dffc84c folder)
+                leaderboard_list.append({"user": username, "right": 0})
+
+    # Sort: Highest score first
+    leaderboard_list.sort(key=lambda x: x['right'], reverse=True)
+    
+    return jsonify(leaderboard_list), 200
 @app.route('/api/delete')
 def delete():
     name = request.args.get('name')
