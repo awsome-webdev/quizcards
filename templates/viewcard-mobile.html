@@ -78,6 +78,35 @@ const cardContainer = document.getElementById('card-container');
 const cardImage = document.getElementById('img');
 
 backDiv.style.display = 'none';
+
+let userStats = null;
+function moveItem(arr, fromIndex, toIndex) {
+    const [item] = arr.splice(fromIndex, 1);
+    
+
+    arr.splice(toIndex, 0, item);
+    
+    return arr;
+}
+async function fetchAndBuildJSON() {
+    const response = await fetch('/api/getstats');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    let result = ''; 
+    
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        result += decoder.decode(value, { stream: true });
+        
+        console.log(`Downloaded ${result.length} characters...`);
+    }
+
+    const finalObject = JSON.parse(result);
+    return finalObject;
+}
 function updatecount(){
     //do nothing for now
 }
@@ -119,18 +148,17 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function getcards(name) {
-    fetch(`/api/cards`)
+    userStats = await fetchAndBuildJSON();
+    
+    await fetch(`/api/cards`)
     .then(response => response.json())
     .then(data => {
         cardSet = data.find(c => c.Title === name);
-        generatetest();
         if (cardSet && cardSet.content && cardSet.content.length > 0) {
             currentIndex = 0;
             showingFront = true;
             showCard(currentIndex);
-        } else {
-            frontContent.textContent = 'No cards found.';
-            backContent.textContent = '';
+            generatetest();
         }
     });
 }
@@ -153,40 +181,44 @@ function switchmode(mode) {
         document.getElementById('next-button').style.display = 'block'
     }
 }
-function generatetest(){
-    console.log(cardSet)
-    content = cardSet.content;
+function generatetest() {
+    if (!cardSet || !cardSet.content) return;
+    
+    test = [];
+    let content = cardSet.content;
+
     content.forEach(data => {
-        let option1, option2, option3;
-        for (let i=0; i<3; i++){
-            const randcard = content[Math.floor(Math.random() * content.length)];
-            let option = randcard.answer !== '' ? randcard.answer : randcard.image;
-            if (i === 0) option1 = option;
-            else if (i === 1) option2 = option;
-            else option3 = option;
+        let wrongOptions = content
+            .filter(card => card.answer !== data.answer)
+            .map(card => card.answer !== '' ? card.answer : card.image);
+
+        wrongOptions.sort(() => Math.random() - 0.5);
+        let options = wrongOptions.slice(0, 3);
+
+        let isHard = false;
+        if (userStats && userStats.wrong_questions) {
+            const wrongEntry = userStats.wrong_questions.find(q => q.text === data.question);
+            if (wrongEntry && wrongEntry.count > 1) isHard = true;
         }
-        json = {
+
+        test.push({
             question: data.question === '' ? data.image : data.question,
-            answer: data.answer,
-            options: [option1, option2, option3],
+            answer: data.answer !== '' ? data.answer : data.image,
+            options: options,
             userans: '',
-            right: 0
-        };
-        test.push(json);
-        //console.log(json);
+            right: 0,
+            isHard: isHard
+        });
     });
-    const progress = document.getElementById('test-p')
-    progress.setAttribute('max', test.length)
-    console.log('Test object:')
-    console.log(test)
-    showtestquestion(0);
+
+    shuffletest();
 }
 function showtestquestion(index){
     if (!test || index < 0 || index >= test.length) return;
     
-    currentQuestion = index; // Update global index
+    currentQuestion = index;
     
-    // Update Progress Bar
+
     const progress = document.getElementById('test-p');
     progress.setAttribute('value', index);
 
@@ -194,20 +226,19 @@ function showtestquestion(index){
     const parent = document.getElementById('options');
     const question = document.getElementById('q');
 
-    // Shuffle options
+
     let alloptions = [...q.options, q.answer];
     alloptions.sort(() => Math.random() - 0.5);
 
-    // Render Question
+
     question.innerHTML = q.question.startsWith('data:image') 
         ? `<img src="${q.question}" class="max-h-[50vh] max-w-[50vw] min-h-[50%] min-w-[50%]  mx-auto rounded-lg">` 
         : q.question;
 
     parent.innerHTML = '';
 
-    // Generate Buttons
+
     alloptions.forEach(opt => {
-        // We encode the answer to make it safe for HTML attributes
         const safeValue = opt.replace(/"/g, '&quot;'); 
 
         parent.innerHTML += `
@@ -224,18 +255,16 @@ function showtestquestion(index){
     });
 }
 function check(ele){
-    // Reset borders on all siblings (optional, if you want to allow re-guessing)
     const allOptions = document.getElementById('options').children;
     for (let child of allOptions) {
         child.classList.remove('border-green-500', 'border-red-500', 'bg-green-500/20', 'bg-red-500/20');
         child.classList.add('border-white/30'); // Reset to default
     }
 
-    // Get the clean answer from the data attribute
     let selected = ele.getAttribute('data-val');
     let answerq = test[currentQuestion].answer;
 
-    // Compare
+
     if (selected === answerq) {
         ele.classList.remove('border-white/30');
         ele.classList.add('border-green-500', 'bg-green-500/20');
@@ -266,25 +295,22 @@ function check(ele){
         right.classList.add('bg-green-500/30')
         right.classList.remove('border-white/30')
         right.classList.add('border-green-500/20')
-        startTimer(2, 'red')
         test[currentQuestion].right--
         test[currentQuestion].userans = 'w'
+        shufflehardtoclose(currentQuestion);
+        startTimer(2, 'red')
         wrongq++
     }
     updatecount()
 }
 function startTimer(seconds, color) {
-    // Clear any existing timer first
     clearInterval(timerInterval);
     document.getElementById('test').classList.add('pointer-events-none')
-    // Reset bar to full width
     timerBar.style.width = '100%';
     
-    // 1. CLEAN UP: Remove BOTH possible color classes to prevent mixing
+
     timerBar.classList.remove('bg-red-500/10', 'bg-green-500/10'); 
     
-    // 2. ADD NEW COLOR: Add the requested color
-    // Note: We use 'green' as a string fallback, not a variable
     const colorName = color || 'green';
     timerBar.classList.add(`bg-${colorName}-500/10`);
     
@@ -301,11 +327,9 @@ function startTimer(seconds, color) {
             clearInterval(timerInterval);
             timerBar.style.width = '0%';
             
-            // Trigger next question
             document.getElementById('test').classList.remove('pointer-events-none')
             showtestquestion(++currentQuestion);
             
-            // Reset card styles
             const ele2 = document.getElementById('test');
             ele2.classList.remove('border-red-500/20', 'border-green-500/20', 'bg-green-500/10', 'bg-red-500/10');
             ele2.classList.add('border-white/30', 'bg-white/10');
@@ -332,6 +356,22 @@ function truncateToDetails(text, lineLimit = 3) {
         </details>
     `;
 }
+function shufflehardtoclose(currentIndex, gap = 4) {
+    const recentMistakes = test.filter((q, index) => q.userans === 'w' && index <= currentIndex);
+
+    recentMistakes.forEach(mistake => {
+        const reQueue = { ...mistake, userans: '', right: 0 }; 
+        
+        const insertAt = Math.min(currentIndex + gap + Math.floor(Math.random() * 2), test.length);
+
+        test.splice(insertAt, 0, reQueue);
+        
+        mistake.userans = 're-queued'; 
+    });
+
+    const progress = document.getElementById('test-p');
+    progress.setAttribute('max', test.length);
+}
 function shuffletest(){
     test.sort(() => Math.random() - 0.5);
     currentQuestion = 0;
@@ -339,23 +379,31 @@ function shuffletest(){
 }
 window.addEventListener('beforeunload', (event) => {
     let test2 = [];
-    test.forEach(function(item){
-        if (item['userans'] !== ''){
-            test2.push(item)
+    test.forEach(function(item) {
+        if (item['userans'] !== '' && item['userans'] !== 're-queued') {
+            let data = {
+                question: item.question.startsWith('data:') ? 'image' : item.question,
+                answer: item.answer.startsWith('data:') ? 'image' : item.answer, 
+                options: item.options.map(opt => opt.startsWith('data:') ? 'image' : opt),
+                userans: item.userans,
+                right: item.right,
+            };
+            test2.push(data);
         }
-    })
-if (test2.length > 0 || rightq > 0 || wrongq > 0) {
-        fetch('/api/savetest', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                setname: setname,
-                right: rightq, 
-                wrong: wrongq,
-                test: test2
-            }),
-            keepalive: true
+    });
+
+    if (test2.length > 0 || rightq > 0 || wrongq > 0) {
+        const payload = JSON.stringify({
+            setname: setname,
+            right: rightq, 
+            wrong: wrongq,
+            test: test2
         });
+        const success = navigator.sendBeacon('/api/savetest', new Blob([payload], { type: 'application/json' }));
+        
+        if (!success) {
+            console.error("Beacon failed: Data too large or browser rejected.");
+        }
     }
 });
 </script>

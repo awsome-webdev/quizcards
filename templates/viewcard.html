@@ -240,7 +240,7 @@ function showtestquestion(index){
     const q = test[index];
     const parent = document.getElementById('options');
     const question = document.getElementById('q');
-s
+
     let alloptions = [...q.options, q.answer];
     alloptions.sort(() => Math.random() - 0.5);
 
@@ -336,10 +336,8 @@ function startTimer(seconds, color) {
             clearInterval(timerInterval);
             timerBar.style.width = '0%';
             
-            // Trigger next question
             showtestquestion(++currentQuestion);
             document.getElementById('test').classList.remove('pointer-events-none')
-            // Reset card styles
             const ele2 = document.getElementById('test');
             ele2.classList.remove('border-red-500/20', 'border-green-500/20', 'bg-green-500/10', 'bg-red-500/10');
             ele2.classList.add('border-white/30', 'bg-white/10');
@@ -396,23 +394,32 @@ function shuffletest() {
 }
 window.addEventListener('beforeunload', (event) => {
     let test2 = [];
-    test.forEach(function(item){
-        if (item['userans'] !== ''){
-            test2.push(item)
+    test.forEach(function(item) {
+        if (item['userans'] !== '' && item['userans'] !== 're-queued') {
+            let data = {
+                question: item.question.startsWith('data:') ? 'image' : item.question,
+                answer: item.answer.startsWith('data:') ? 'image' : item.answer, 
+                options: item.options.map(opt => opt.startsWith('data:') ? 'image' : opt),
+                userans: item.userans,
+                right: item.right,
+            };
+            test2.push(data);
         }
-    })
-if (test2.length > 0 || rightq > 0 || wrongq > 0) {
-        fetch('/api/savetest', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                setname: setname,
-                right: rightq, 
-                wrong: wrongq,
-                test: test2
-            }),
-            keepalive: true
+    });
+
+    if (test2.length > 0 || rightq > 0 || wrongq > 0) {
+        const payload = JSON.stringify({
+            setname: setname,
+            right: rightq, 
+            wrong: wrongq,
+            test: test2
         });
+
+        const success = navigator.sendBeacon('/api/savetest', new Blob([payload], { type: 'application/json' }));
+        
+        if (!success) {
+            console.error("Beacon failed: Data too large or browser rejected.");
+        }
     }
 });
 </script>
