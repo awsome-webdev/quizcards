@@ -322,12 +322,20 @@ def savetest():
         json.dump(current_stats, f, indent=4)
 
     return 'ok', 200
+@app.route('/api/wrong')
+def wrong():
+    file = f'user_data/{current_user.id}/stats.json'
+    data = readjson(file) 
+    return str(data['wrong'])
+@app.route('/api/right')
+def right():
+    file = f'user_data/{current_user.id}/stats.json'
+    data = readjson(file) 
+    return jsonify(data['right'])
 @app.route('/api/leaderboard')
 def leaderboard():
-    # Use os.path.join to handle Linux paths correctly
     root_dir = os.path.join(root, 'user_data') 
     
-    # Load User DB
     try:
         with open(os.path.join(root, 'users.json'), 'r') as f:
             userDB = json.load(f)
@@ -335,18 +343,13 @@ def leaderboard():
         return jsonify([]), 500
 
     leaderboard_list = []
-    
-    # Get all folder names in user_data
     if os.path.exists(root_dir):
         folders = [f for f in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, f))]
         
         for x in folders:
-            # 1. Look up user first (Outside the try block for the file)
             match = [u for u in userDB if u.get('id') == x]
             userOBJ = match[0] if match else None
             username = userOBJ['username'] if userOBJ else f"Unknown ({x[:5]})"
-
-            # 2. Try to read the stats
             stats_path = os.path.join(root_dir, x, 'stats.json')
             
             if os.path.exists(stats_path):
@@ -358,13 +361,10 @@ def leaderboard():
                             "right": data.get('right', 0)
                         })
                 except Exception:
-                    # File exists but is corrupted
                     leaderboard_list.append({"user": username, "right": 0})
             else:
-                # File doesn't exist (like your 6dffc84c folder)
                 leaderboard_list.append({"user": username, "right": 0})
 
-    # Sort: Highest score first
     leaderboard_list.sort(key=lambda x: x['right'], reverse=True)
     
     return jsonify(leaderboard_list), 200

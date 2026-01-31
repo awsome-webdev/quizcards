@@ -3,15 +3,27 @@
         <title>Quiz Cards</title>
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
-    <body class="bg-gray-900 text-white">
+    <body class="bg-gray-900 text-white w-full h-full">
+        <div id="headstats" class="w-full h-[20vh] items-center justify-items-center grid grid-cols-[1fr_1fr]">
+            <div id="right" class="col-start-1 h-fit w-fit col-end-1 p-5 text-center border border-white/20 bg-white/10 backdrop-blur-md rounded-md">
+                <p class="text-3xl">Questions answered right</p>
+                <p id="right-text" class="text-green-500 text-3xl">3</p>
+            </div>
+            <div id="wrong" class="col-start-2 h-fit w-fit col-end-2 p-5 text-center border border-white/20 bg-white/10 backdrop-blur-md rounded-md">
+                <p class="text-3xl">Questions answered wrong</p>
+                <p id="wrong-text" class="text-green-500 text-3xl">3</p>
+            </div>
+        </div>
         <h1 class="m-10 text-3xl">Your sets:</h1>
-        <div id="cards" class="w-[100vw] grid grid-cols-4 grid-gap-4">
+        <div id="cards" class="w-[95vw] grid grid-cols-4 gap-4">
             <!-- Placeholder for user sets -->
         </div>
     </body>
 </html>
 <script>
 loadcards();
+fetch('/api/wrong').then(res => res.text()).then(data => document.getElementById('wrong-text').textContent = data)
+fetch('/api/right').then(res => res.text()).then(data => document.getElementById('right-text').textContent = data)
     function opencards(setname) {
         window.location.href = `/viewcard?setname=${setname}`;
     }
@@ -37,7 +49,7 @@ loadcards();
     }
     function createcard(Title, cards, desc) {
         const div = document.createElement("div");
-        div.className = "bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-[40vh] w-[20vw] h-fit grid grid-rows-[1fr_1fr]"
+        div.className = "bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-full w-[20vw] grid grid-rows-[1fr_auto]"
         div.innerHTML = `
         <div class="row-start-1 row-end-1" onclick="opencards('${Title}')">
             <h2 class="text-2xl mb-4">${Title}</h2>
