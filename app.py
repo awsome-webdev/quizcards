@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, Response, stream_with_context
 import json
 import os
 import re
@@ -332,6 +332,21 @@ def right():
     file = f'user_data/{current_user.id}/stats.json'
     data = readjson(file) 
     return jsonify(data['right'])
+@app.route('/api/getstats')
+def getstats():
+    file = f'user_data/{current_user.id}/stats.json'
+    thres = 5 * 1024 * 1024
+    file_size = os.path.getsize(file)
+    if file_size < thres:
+            return jsonify(readjson(file))
+    def generate():
+        with open(f'{root}user_data/{current_user.id}/stats.json', 'rb') as f:
+            while True:
+                chunk = f.read(4096)
+                if not chunk:
+                    break
+                yield chunk
+    return Response(stream_with_context(generate()), mimetype='application/json')
 @app.route('/api/leaderboard')
 def leaderboard():
     root_dir = os.path.join(root, 'user_data') 

@@ -91,6 +91,35 @@ const cardContainer = document.getElementById('card-container');
 const cardImage = document.getElementById('img');
 
 backDiv.style.display = 'none';
+let userStats = null;
+function moveItem(arr, fromIndex, toIndex) {
+    const [item] = arr.splice(fromIndex, 1);
+    
+
+    arr.splice(toIndex, 0, item);
+    
+    return arr;
+}
+async function fetchAndBuildJSON() {
+    const response = await fetch('/api/getstats');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    let result = ''; 
+    
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        result += decoder.decode(value, { stream: true });
+        
+        console.log(`Downloaded ${result.length} characters...`);
+    }
+
+    const finalObject = JSON.parse(result);
+    return finalObject;
+}
+
 function updatecount(){
     document.getElementById('wrong').textContent = wrongq
     document.getElementById('right').textContent = rightq
@@ -133,6 +162,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function getcards(name) {
+    userStats = await fetchAndBuildJSON();
+    
     await fetch(`/api/cards`)
     .then(response => response.json())
     .then(data => {
@@ -141,12 +172,9 @@ async function getcards(name) {
             currentIndex = 0;
             showingFront = true;
             showCard(currentIndex);
-        } else {
-            frontContent.textContent = 'No cards found.';
-            backContent.textContent = '';
+            generatetest();
         }
     });
-    generatetest();
 }
 function next(){
     if (currentmode !== 'test') { currentIndex++; showingFront = false; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }
@@ -169,55 +197,53 @@ function switchmode(mode) {
         document.getElementById('counter').style.display = 'none'
     }
 }
-function generatetest(){
-    if (!cardSet || !cardSet.content) {
-        console.warn("cardSet not loaded yet. Skipping test generation.");
-        return;
-    }
+function generatetest() {
+    if (!cardSet || !cardSet.content) return;
+    
+    test = [];
     let content = cardSet.content;
-content.forEach(data => {
-    // 1. Get all possible answers EXCEPT the correct one for this specific card
-    let wrongOptions = content
-        .filter(card => card.answer !== data.answer)
-        .map(card => card.answer !== '' ? card.answer : card.image);
 
-    // 2. Shuffle the wrong options list
-    wrongOptions.sort(() => Math.random() - 0.5);
+    content.forEach(data => {
+        let wrongOptions = content
+            .filter(card => card.answer !== data.answer)
+            .map(card => card.answer !== '' ? card.answer : card.image);
 
-    // 3. Pick the first 3 unique ones
-    let options = wrongOptions.slice(0, 3);
+        wrongOptions.sort(() => Math.random() - 0.5);
+        let options = wrongOptions.slice(0, 3);
 
-    let json = {
-        question: data.question === '' ? data.image : data.question,
-        answer: data.answer !== '' ? data.answer : data.image,
-        options: options, // These are your 3 "wrong" choices
-        userans: '',
-        right: 0
-    };
-    test.push(json);
-});
-    const progress = document.getElementById('test-p')
-    progress.setAttribute('max', test.length)
-    showtestquestion(0);
+        let isHard = false;
+        if (userStats && userStats.wrong_questions) {
+            const wrongEntry = userStats.wrong_questions.find(q => q.text === data.question);
+            if (wrongEntry && wrongEntry.count > 1) isHard = true;
+        }
+
+        test.push({
+            question: data.question === '' ? data.image : data.question,
+            answer: data.answer !== '' ? data.answer : data.image,
+            options: options,
+            userans: '',
+            right: 0,
+            isHard: isHard
+        });
+    });
+
+    shuffletest();
 }
 function showtestquestion(index){
     if (!test || index < 0 || index >= test.length) return;
     
-    currentQuestion = index; // Update global index
+    currentQuestion = index;
     
-    // Update Progress Bar
     const progress = document.getElementById('test-p');
     progress.setAttribute('value', index);
 
     const q = test[index];
     const parent = document.getElementById('options');
     const question = document.getElementById('q');
-
-    // Shuffle options
+s
     let alloptions = [...q.options, q.answer];
     alloptions.sort(() => Math.random() - 0.5);
 
-    // Render Question
     question.innerHTML = q.question.startsWith('data:image') 
         ? `<img src="${q.question}" class="max-h-[30%] max-w-[30%] mx-auto rounded-lg">` 
         : q.question;
@@ -226,7 +252,6 @@ function showtestquestion(index){
 
     // Generate Buttons
     alloptions.forEach(opt => {
-        // We encode the answer to make it safe for HTML attributes
         const safeValue = opt.replace(/"/g, '&quot;'); 
 
         parent.innerHTML += `
@@ -243,18 +268,15 @@ function showtestquestion(index){
     });
 }
 function check(ele){
-    // Reset borders on all siblings (optional, if you want to allow re-guessing)
     const allOptions = document.getElementById('options').children;
     for (let child of allOptions) {
         child.classList.remove('border-green-500', 'border-red-500', 'bg-green-500/20', 'bg-red-500/20');
-        child.classList.add('border-white/30'); // Reset to default
+        child.classList.add('border-white/30');
     }
 
-    // Get the clean answer from the data attribute
     let selected = ele.getAttribute('data-val');
     let answerq = test[currentQuestion].answer;
 
-    // Compare
     if (selected === answerq) {
         ele.classList.remove('border-white/30');
         ele.classList.add('border-green-500', 'bg-green-500/20');
@@ -285,25 +307,20 @@ function check(ele){
         right.classList.add('bg-green-500/30')
         right.classList.remove('border-white/30')
         right.classList.add('border-green-500/20')
-        startTimer(2, 'red')
         test[currentQuestion].right--
         test[currentQuestion].userans = 'w'
+        shufflehardtoclose(currentQuestion);
+        startTimer(2, 'red')
         wrongq++
     }
     updatecount()
 }
 function startTimer(seconds, color) {
-    // Clear any existing timer first
     clearInterval(timerInterval);
     document.getElementById('test').classList.add('pointer-events-none')
-    // Reset bar to full width
     timerBar.style.width = '100%';
     
-    // 1. CLEAN UP: Remove BOTH possible color classes to prevent mixing
     timerBar.classList.remove('bg-red-500/10', 'bg-green-500/10'); 
-    
-    // 2. ADD NEW COLOR: Add the requested color
-    // Note: We use 'green' as a string fallback, not a variable
     const colorName = color || 'green';
     timerBar.classList.add(`bg-${colorName}-500/10`);
     
@@ -334,7 +351,6 @@ getcards(setname);
 function truncateToDetails(text, lineLimit = 3) {
     if (text.startsWith('data:image') || text.startsWith('http')) return text;
     
-    // Split logic... (same as before)
     const lines = text.split(/<br\s*\/?>/i);
     if (lines.length <= lineLimit) return text;
 
@@ -349,9 +365,33 @@ function truncateToDetails(text, lineLimit = 3) {
         </details>
     `;
 }
-function shuffletest(){
+function shufflehardtoclose(currentIndex, gap = 2) {
+    const recentMistakes = test.filter((q, index) => q.userans === 'w' && index <= currentIndex);
+
+    recentMistakes.forEach(mistake => {
+        const reQueue = { ...mistake, userans: '', right: 0 }; 
+        
+        const insertAt = Math.min(currentIndex + gap + Math.floor(Math.random() * 2), test.length);
+
+        test.splice(insertAt, 0, reQueue);
+        
+        mistake.userans = 're-queued'; 
+    });
+
+    const progress = document.getElementById('test-p');
+    progress.setAttribute('max', test.length);
+}
+function shuffletest() {
     test.sort(() => Math.random() - 0.5);
+    test.sort((a, b) => {
+        if (a.isHard && !b.isHard) return -1;
+        if (!a.isHard && b.isHard) return 1; 
+        return 0;
+    });
+
     currentQuestion = 0;
+    const progress = document.getElementById('test-p');
+    progress.setAttribute('max', test.length);
     showtestquestion(0);
 }
 window.addEventListener('beforeunload', (event) => {
