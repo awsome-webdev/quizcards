@@ -505,7 +505,7 @@ def register():
         users = load_users()
 
         if any(u["username"] == username for u in users):
-            return "User already exists"
+            return redirect(url_for('register', error='user already exist'))
 
         users.append({
             "id": uid,

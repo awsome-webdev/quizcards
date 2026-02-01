@@ -20,3 +20,10 @@
         </center>
     </body>
 </html>
+<script>
+const par = new URLSearchParams(window.location.search);
+const msg = par.get("error");
+if (msg) {
+    alert(msg);
+}
+</script>
