@@ -427,7 +427,6 @@ def dash():
 def create():
     return render_template('create.html')
 
-# -- New Route for Parsing PDF --
 @app.route("/api/parse-pdf", methods=["POST"])
 @login_required
 def parse_pdf():
@@ -437,7 +436,6 @@ def parse_pdf():
     file = request.files['file']
     desc = request.form.get('desc')
     try:
-        # Use the hybrid parser
         title, cards = parse_hybrid_quizlet_pdf(file)
         
         return jsonify([{
@@ -457,8 +455,7 @@ def import_set():
         if not data:
             return jsonify({"status": "error", "error": "No data received"}), 400
 
-        # Save the deck to your cards.json or database here
-        # For example, append to cards.json:
+
         import os, json
         cards_file = os.path.join(root, f'user_data/{current_user.id}/cards.json')
         if os.path.exists(cards_file):

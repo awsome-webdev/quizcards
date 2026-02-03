@@ -1,134 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Import PDF Study Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .card-preview { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 8px; }
-        .loading { display: none; color: blue; }
+        .loading { display: none; color: #60a5fa; }
+        body { background-color: #111827; min-height: 100vh; }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
-<body class="text-white grid grid-cols-[3fr_1fr] gap-[2%] grid-rows-1">
-    <div id="upload" class="p-4 w-fit h-fit rounded-md col-start-2">
-    <form id="uploadForm" class="bg-white/10 backdrop-blur-md border-white/20 rounded-md m-5 p-5 w-fit">
-        <h1 class="text-white text-2xl">Import PDF from quizlet:</h1><br>
-        <label for="pdfFile" class="hover:cursor-pointer bg-white/10 backdrop-blur-md border-white/20 p-3 m-5 ml-10 rounded-md">Choose file</label><br><br>
-        <input type="file" id="pdfFile" name="file" accept=".pdf" required class="hidden">
-        <textarea id="desc" placeholder="Description" class="bg-white/10 backdrop-blur-md rounded-md border-white/40 p-3"></textarea><br>
-        <button type="submit" class="hover:cursor-pointer bg-white/10 backdrop-blur-md border-white/20 p-3 ml-10 m-5 rounded-md">Upload</button>
-    </form>
-    <div id="loading" class="loading text-xl">Processing PDF... This may take a moment.</div>
-
-    <div id="result">
-        <div id="cardContainer"></div>
-    </div>
-    <button class="m-5 rounded-lg p-4 bg-white/10">Create</button>
-    </div>
-    <div class="col-start-1 col-end-1 row-start-1">
-    <input type="text" placeholder="Title" class="border-none bg-gray-600 text-white rounded-lg p-4 w-full m-4"><br>
-    <textarea placeholder="add a description..." class="border-none bg-gray-600 text-white rounded-lg p-4 w-full m-4"></textarea>
-    <hr class="border border-white w-full m-4">
-    <div id="cards" class="w-full h-fit m-4 flex flex-col ">
-        <div class="w-full h-fit p-4 bg-gray-800 rounded-lg grid grid-cols-2 gap-2 grid-rows-[10%_1fr] mb-4">
-            <p class="text-md m-2 row-start-1 row-end-1 col-start-1">1</p><br>
-            <input type="text" placeholder="Term" class="col-start-1 col-end-1 row-start-2 row-end-2 border-none bg-gray-600 text-white rounded-lg h-fit p-4 w-full m-4 ml-0"> <input type="text" placeholder="Definition" class="col-start-2 row-start-2 border-none bg-gray-600 text-white rounded-lg p-4 my-4 h-fit w-full">
-        </div>
-                <div class="w-full h-fit p-4 bg-gray-800 rounded-lg grid grid-cols-2 gap-2 grid-rows-[10%_1fr] mb-4">
-            <p class="text-md m-2 row-start-1 row-end-1 col-start-1">1</p><br>
-            <input type="text" placeholder="Term" class="col-start-1 col-end-1 row-start-2 row-end-2 border-none bg-gray-600 text-white rounded-lg h-fit p-4 w-full m-4 ml-0"> <input type="text" placeholder="Definition" class="col-start-2 row-start-2 border-none bg-gray-600 text-white rounded-lg p-4 my-4 h-fit w-full">
-        </div>
-                <div class="w-full h-fit p-4 bg-gray-800 rounded-lg grid grid-cols-2 gap-2 grid-rows-[10%_1fr] mb-4">
-            <p class="text-md m-2 row-start-1 row-end-1 col-start-1">1</p><br>
-            <input type="text" placeholder="Term" class="col-start-1 col-end-1 row-start-2 row-end-2 border-none bg-gray-600 text-white rounded-lg h-fit p-4 w-full m-4 ml-0"> <input type="text" placeholder="Definition" class="col-start-2 row-start-2 border-none bg-gray-600 text-white rounded-lg p-4 my-4 h-fit w-full">
-        </div>
-                <div class="w-full h-fit p-4 bg-gray-800 rounded-lg grid grid-cols-2 gap-2 grid-rows-[10%_1fr] mb-4">
-            <p class="text-md m-2 row-start-1 row-end-1 col-start-1">1</p><br>
-            <input type="text" placeholder="Term" class="col-start-1 col-end-1 row-start-2 row-end-2 border-none bg-gray-600 text-white rounded-lg h-fit p-4 w-full m-4 ml-0"> <input type="text" placeholder="Definition" class="col-start-2 row-start-2 border-none bg-gray-600 text-white rounded-lg p-4 my-4 h-fit w-full">
-        </div>
-                <div class="w-full h-fit p-4 bg-gray-800 rounded-lg grid grid-cols-2 gap-2 grid-rows-[10%_1fr] mb-4">
-            <p class="text-md m-2 row-start-1 row-end-1 col-start-1">1</p><br>
-            <input type="text" placeholder="Term" class="col-start-1 col-end-1 row-start-2 row-end-2 border-none bg-gray-600 text-white rounded-lg h-fit p-4 w-full m-4 ml-0"> <input type="text" placeholder="Definition" class="col-start-2 row-start-2 border-none bg-gray-600 text-white rounded-lg p-4 my-4 h-fit w-full">
-        </div>
-    </div>
-    </div>
-</body>
-    <script>
-        let cardnum = 1;
-    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+<body class="text-white p-6">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
         
-        const fileInput = document.getElementById('pdfFile');
-        const description = document.getElementById('desc').value
-        if (!fileInput.files[0]) return;
+        <!-- LEFT COLUMN: EDITOR -->
+        <div class="space-y-6">
+            <div class="bg-gray-800/50 p-6 rounded-xl border border-white/10">
+                <input id="deckTitle" type="text" placeholder="Title" class="text-3xl font-bold bg-transparent border-none focus:ring-0 w-full mb-2 placeholder:text-gray-500">
+                <textarea id="deckDescription" placeholder="Add a description..." class="bg-transparent border-none focus:ring-0 w-full text-gray-300 resize-none h-12 placeholder:text-gray-500"></textarea>
+                <hr class="border-white/10 my-4">
+                
+                <div id="cardsContainer" class="space-y-4">
+                    <!-- Dynamic cards will appear here -->
+                </div>
 
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        formData.append('desc', description)
+                <div class="mt-8 flex gap-4">
+                    <button id="addCardBtn" class="flex-1 py-4 border-2 border-dashed border-white/20 rounded-xl hover:border-white/40 hover:bg-white/5 transition-all text-gray-400 font-medium">
+                        + Add New Card
+                    </button>
+                    <button id="saveDeckBtn" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        Save Deck
+                    </button>
+                </div>
+            </div>
+        </div>
 
-        // 1. UI Feedback
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('loading').innerText = "Step 1: Parsing PDF...";
-        document.getElementById('cardContainer').innerHTML = '';
+        <!-- RIGHT COLUMN: UPLOAD & CONTROLS -->
+        <div class="space-y-6">
+            <div id="upload" class="bg-gray-800 p-6 rounded-xl border border-white/10 sticky top-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Import Quizlet PDF
+                </h2>
+                
+                <form id="uploadForm" class="space-y-4">
+                    <div class="relative group">
+                        <label for="pdfFile" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-gray-700/30 hover:bg-gray-700/50 transition-all group-hover:border-blue-500">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <p id="fileNameDisplay" class="mb-2 text-sm text-gray-400 text-center px-2">Click to upload PDF</p>
+                            </div>
+                            <input type="file" id="pdfFile" name="file" accept=".pdf" class="hidden">
+                        </label>
+                    </div>
 
-        try {
-            // 2. First Request: Turn PDF into JSON
-            const parseRes = await fetch('/api/parse-pdf', {
-                method: 'POST',
-                body: formData
+                    
+                    
+                    <button type="submit" class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-gray-200 transition-colors">
+                        Process PDF
+                    </button>
+                </form>
+
+                <div id="loading" class="loading mt-4 text-center">
+                    <div class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mb-1" role="status"></div>
+                    <p class="text-sm font-medium" id="loadingText">Processing PDF...</p>
+                </div>
+
+                <div id="statusMessage" class="mt-4 p-3 rounded-lg text-sm hidden text-center"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cardCount = 0;
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
             });
-
-            if (!parseRes.ok) throw new Error("Failed to parse PDF");
-            const data = await parseRes.json();
-            const deck = data[0]; 
-
-            // 3. UI Feedback
-            document.getElementById('loading').innerText = "Step 2: Saving to your account...";
-            displayCards(deck.content); // Show the user what was found
-
-            // 4. Second Request: Send that JSON to the /import route
-            console.log('Deck to import:', deck);
-            const importRes = await fetch('/import', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(deck)
-            });
-
-            const result = await importRes.json();
-
-            if (importRes.ok && result.status === "success") {
-                alert("Import Successful!");
-                // 5. Redirect to dashboard so they can see their new cards
-                //window.location.href = "/dash"; 
-            } else {
-                throw new Error(result.error || "Failed to save cards");
-            }
-
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error: ' + error.message);
-        } finally {
-            document.getElementById('loading').style.display = 'none';
         }
-    });
 
-    function displayCards(cards) {
-        const container = document.getElementById('cardContainer');
-        container.innerHTML = ''; 
-
-        cards.forEach(card => {
-            const div = document.createElement('div');
-            div.className = 'card-preview';
+        async function handleImageUpload(input, previewId) {
+            const file = input.files[0];
+            const previewImg = document.getElementById(previewId);
+            const cardEl = input.closest('.card-item');
             
-            let imageHtml = card.image ? 
-                `<img src="${card.image}" style="max-width: 200px; display: block; margin-bottom: 10px; border-radius: 4px;">` : '';
+            if (file) {
+                try {
+                    const dataUrl = await fileToDataUrl(file);
+                    previewImg.src = dataUrl;
+                    previewImg.classList.remove('hidden');
+                    cardEl.dataset.imageUrl = dataUrl;
+                } catch (err) {
+                    console.error("Image conversion failed", err);
+                    showMessage("Failed to process image", true);
+                }
+            } else {
+                previewImg.src = "";
+                previewImg.classList.add('hidden');
+                delete cardEl.dataset.imageUrl;
+            }
+        }
 
-            div.innerHTML = `
-                ${imageHtml}
-                <strong>Question:</strong> ${card.question}<br>
-                <strong>Answer:</strong> <div>${card.answer}</div>
+        function createCard(term = '', definition = '', existingImage = null) {
+            cardCount++;
+            const cardId = `card-${Date.now()}-${cardCount}`;
+            const previewId = `preview-${cardId}`;
+            
+            const cardHtml = `
+                <div id="${cardId}" class="card-item w-full p-6 bg-gray-800/80 rounded-xl border border-white/5 hover:border-white/20 transition-all group" data-image-url="${existingImage || ''}">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-sm font-bold text-gray-500 group-hover:text-blue-400 transition-colors tracking-widest uppercase">Card #${cardCount}</span>
+                        <button onclick="removeCard('${cardId}')" class="text-gray-600 hover:text-red-400 p-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_120px] gap-6 items-start">
+                        <div class="space-y-2">
+                            <label class="text-xs font-semibold text-gray-400 uppercase">Term</label>
+                            <input type="text" value="${term}" placeholder="Enter term..." class="term-input w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 focus:border-blue-500 focus:outline-none transition-colors">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-semibold text-gray-400 uppercase">Definition</label>
+                            <textarea placeholder="Enter definition..." class="definition-input w-full bg-gray-900/50 border border-gray-700 rounded-lg p-3 focus:border-blue-500 focus:outline-none transition-colors resize-none h-[46px]">${definition}</textarea>
+                        </div>
+                        <div class="space-y-2 flex flex-col items-center">
+                            <label class="text-xs font-semibold text-gray-400 uppercase mb-1">Image</label>
+                            <label class="cursor-pointer bg-gray-700 p-2 rounded-lg hover:bg-gray-600 transition-colors border border-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(this, '${previewId}')">
+                            </label>
+                            <img id="${previewId}" src="${existingImage || ''}" class="${existingImage ? '' : 'hidden'} w-full h-12 object-cover rounded-md mt-2 border border-gray-600">
+                        </div>
+                    </div>
+                </div>
             `;
-            container.appendChild(div);
+            
+            document.getElementById('cardsContainer').insertAdjacentHTML('beforeend', cardHtml);
+            updateCardIndices();
+        }
+
+        function removeCard(id) {
+            document.getElementById(id).remove();
+            updateCardIndices();
+        }
+
+        function updateCardIndices() {
+            const cards = document.querySelectorAll('.card-item');
+            cardCount = cards.length;
+            cards.forEach((card, index) => {
+                card.querySelector('span').innerText = `Card #${index + 1}`;
+            });
+        }
+
+        function showMessage(msg, isError = false) {
+            const el = document.getElementById('statusMessage');
+            el.innerText = msg;
+            el.className = `mt-4 p-3 rounded-lg text-sm ${isError ? 'bg-red-900/30 text-red-400' : 'bg-green-900/30 text-green-400'}`;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        }
+
+
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || "Click to upload PDF";
+            document.getElementById('fileNameDisplay').innerText = fileName;
         });
-    }
-</script>
+
+        document.getElementById('addCardBtn').addEventListener('click', () => createCard());
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('pdfFile');
+            if (!fileInput.files[0]) return showMessage("Please select a file first", true);
+
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loadingText');
+            loading.style.display = 'block';
+            let data;
+            const formData = new FormData(document.getElementById('uploadForm'))
+            try {
+                loadingText.innerText = "Parsing PDF...";
+                await fetch('/api/parse-pdf', {
+                    method : "POST",
+                    body : formData
+                }).then(res => res.json()).then(resdata => data = resdata)
+                data[0].content.forEach(obj => {
+                    createCard(obj.question, obj.answer, obj.image);
+                })
+
+                loadingText.innerText = "Populating editor...";
+                showMessage(`Successfully imported ${data[0].content.length} cards!`);
+            } catch (err) {
+                showMessage(err.message, true);
+            } finally {
+                loading.style.display = 'none';
+                fileInput.value = '';
+                document.getElementById('fileNameDisplay').innerText = "Click to upload PDF";
+            }
+        });
+
+        document.getElementById('saveDeckBtn').addEventListener('click', async () => {
+            const title = document.getElementById('deckTitle').value.trim();
+            const description = document.getElementById('deckDescription').value.trim();
+            const cards = [];
+            
+            document.querySelectorAll('.card-item').forEach(cardEl => {
+                const question = cardEl.querySelector('.term-input').value.trim();
+                const answer = cardEl.querySelector('.definition-input').value.trim();
+                const image = cardEl.dataset.imageUrl || null;
+
+                if (question || answer) {
+                    cards.push({ 
+                        question, 
+                        answer, 
+                        image 
+                    });
+                }
+            });
+
+            if (!title) return showMessage("Please enter a title for your deck", true);
+            if (cards.length === 0) return showMessage("Add at least one card before saving", true);
+
+            const deckData = {
+                "Title": title,
+                "cards": cards.length,
+                "content": cards,
+                "description": description
+            };
+
+            console.log("Saving Deck with Images:", deckData);
+            
+            const btn = document.getElementById('saveDeckBtn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = "Saving...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(deckData)
+                });
+                
+                if(!res.ok) throw new Error("Server responded with error");
+                
+                showMessage(`Deck "${title}" with ${cards.length} cards, saved successfully!`);
+            } catch (err) {
+                showMessage(`Error saving ${title}, ${err}`);
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        });
+
+        window.onload = () => {
+            for(let i=0; i<2; i++) createCard();
+        };
+    </script>
+</body>
 </html>
