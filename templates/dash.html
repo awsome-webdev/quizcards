@@ -39,7 +39,7 @@ fetch('/api/right').then(res => res.text()).then(data => document.getElementById
         })
     }
     async function loadcards(){
-        await fetch('/api/cards')
+        await fetch('/api/cards?clear=True')
         .then(response => response.json())
         .then(data => {
             data.forEach(set => {

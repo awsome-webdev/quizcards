@@ -504,10 +504,16 @@ def viewcard():
 @app.route('/api/cards')
 @login_required
 def get_cards():
+    try:
+        clear = request.args.get('clear')
+    except:
+        pass
     if not current_user.is_authenticated:
         return jsonify([])
     user_id = current_user.id
     cards = readjson(f'user_data/{user_id}/cards.json')
+    if clear:
+        cards[0]['content'].clear()
     return jsonify(cards)
 
 @app.route("/register", methods=["GET", "POST"])
