@@ -326,27 +326,44 @@ def savetest():
 def wrong():
     file = f'user_data/{current_user.id}/stats.json'
     data = readjson(file) 
-    return str(data['wrong'])
+    try:
+        return jsonify(data['wrong'])
+    except Exception as e:
+        return '0'
 @app.route('/api/right')
 def right():
     file = f'user_data/{current_user.id}/stats.json'
-    data = readjson(file) 
-    return jsonify(data['right'])
+    data = readjson(file)
+    try:
+        return jsonify(data['right'])
+    except Exception as e:
+        return '0'
 @app.route('/api/getstats')
 def getstats():
     file = f'user_data/{current_user.id}/stats.json'
     thres = 5 * 1024 * 1024
-    file_size = os.path.getsize(file)
+    try:
+        file_size = os.path.getsize(file)
+    except:
+        file_size = 0
+    if not file_size:
+        return "{}", 200
     if file_size < thres:
-            return jsonify(readjson(file))
+            try:
+                return jsonify(readjson(file))
+            except Exception as e:
+                return "{}", 200
     def generate():
-        with open(f'{root}user_data/{current_user.id}/stats.json', 'rb') as f:
-            while True:
-                chunk = f.read(4096)
-                if not chunk:
-                    break
-                yield chunk
-    return Response(stream_with_context(generate()), mimetype='application/json')
+        try:
+            with open(f'{root}user_data/{current_user.id}/stats.json', 'rb') as f:
+                while True:
+                    chunk = f.read(4096)
+                    if not chunk:
+                        break
+                    yield chunk
+            return Response(stream_with_context(generate()), mimetype='application/json')
+        except:
+            return '{}', 200
 @app.route('/api/leaderboard')
 def leaderboard():
     root_dir = os.path.join(root, 'user_data') 
