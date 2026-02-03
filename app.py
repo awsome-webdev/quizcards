@@ -472,20 +472,32 @@ def import_set():
         if not data:
             return jsonify({"status": "error", "error": "No data received"}), 400
 
+        target_set_title = request.args.get('set')
 
         import os, json
         cards_file = os.path.join(root, f'user_data/{current_user.id}/cards.json')
+        
         if os.path.exists(cards_file):
             with open(cards_file, "r") as f:
                 all_decks = json.load(f)
         else:
             all_decks = []
 
+
+        if target_set_title:
+
+            all_decks = [deck for deck in all_decks if deck.get("Title") != target_set_title]
+
+
         all_decks.append(data)
+
         with open(cards_file, "w") as f:
             json.dump(all_decks, f, indent=4)
 
-        return jsonify({"status": "success"}), 200
+        return jsonify({
+            "status": "success", 
+            "message": f"Updated {target_set_title}" if target_set_title else "Appended new set"
+        }), 200
 
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
@@ -506,12 +518,16 @@ def viewcard():
 def get_cards():
     try:
         clear = request.args.get('clear')
+        cardset = request.args.get('set')
     except:
         pass
     if not current_user.is_authenticated:
         return jsonify([])
     user_id = current_user.id
     cards = readjson(f'user_data/{user_id}/cards.json')
+    if cardset:
+        target_content = next((item for item in cards if item["Title"] == cardset), None)
+        return jsonify(target_content)
     if clear:
         cards[0]['content'].clear()
     return jsonify(cards)

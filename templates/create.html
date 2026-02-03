@@ -78,6 +78,7 @@
     </div>
 
     <script>
+        let editsave = false;
         let cardCount = 0;
         function fileToDataUrl(file) {
             return new Promise((resolve, reject) => {
@@ -87,7 +88,22 @@
                 reader.readAsDataURL(file);
             });
         }
-
+        const par = new URLSearchParams(window.location.search)
+        const edit = par.get('edit')
+        if (edit){
+            let data;
+            fetch(`/api/cards?set=${edit}`).then(res => res.json()).then(resdata => data = resdata).then(res => {
+                document.getElementById('deckTitle').value = data['Title']
+                document.getElementById('deckDescription').textContent = data['description']
+                data['content'].forEach(obj =>{
+                createCard(obj.question, obj.answer, obj.image || null)
+            })
+            editsave = true
+                    if(!editsave){
+            for(let i=0; i<2; i++) createCard();
+        }
+        })
+        }
         async function handleImageUpload(input, previewId) {
             const file = input.files[0];
             const previewImg = document.getElementById(previewId);
@@ -243,9 +259,9 @@
             const originalContent = btn.innerHTML;
             btn.innerHTML = "Saving...";
             btn.disabled = true;
-
-            try {
-                const res = await fetch('/import', {
+            if (editsave){
+                            try {
+                const res = await fetch(`/import?set=${title}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(deckData)
@@ -260,11 +276,28 @@
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
             }
-        });
+            }
+            else{
 
-        window.onload = () => {
-            for(let i=0; i<2; i++) createCard();
-        };
+            try {
+                const res = await fetch(`/import`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(deckData)
+                });
+                
+                if(!res.ok) throw new Error("Server responded with error");
+                
+                showMessage(`Deck "${title}" with ${cards.length} cards, saved successfully!`);
+            } catch (err) {
+                showMessage(`Error saving ${title}, ${err}`);
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+        });
+    
     </script>
 </body>
 </html>

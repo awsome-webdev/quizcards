@@ -57,10 +57,13 @@ fetch('/api/right').then(res => res.text()).then(data => document.getElementById
             <br>
             <p class="text-white/70">${desc}</p>
         </div>
-        <div class="row-start-2 grid grid-cols-2">
-            <button class="bg-red-400/10 p-6 h-fit rounded-md bottom-[0px]" onclick="deleteset('${Title}')">Delete</button>
+        <div class="row-start-2 grid grid-cols-2 gap-2">
+            <button class="bg-red-400/10 p-6 h-fit rounded-md bottom-[0px]" onclick="deleteset('${Title}')">Delete</button><button class="bg-orange-400/10 p-6 h-fit rounded-md bottom-[0px]" onclick="editcard('${Title}')">Edit</button>
         </div>
         `
         document.getElementById("cards").appendChild(div);
+    }
+    function editcard(title){
+        window.location.href = `/create?edit=${title}`
     }
 </script>
