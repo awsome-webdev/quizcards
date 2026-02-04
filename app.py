@@ -322,6 +322,10 @@ def savetest():
         json.dump(current_stats, f, indent=4)
 
     return 'ok', 200
+@app.route('/blockblast')
+@login_required
+def blocks():
+    return render_template('blockblast.html')
 @app.route('/api/wrong')
 def wrong():
     file = f'user_data/{current_user.id}/stats.json'

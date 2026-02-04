@@ -6,6 +6,7 @@
     <body class="grid place-items-center grid-cols-3 grid-rows-3 bg-gray-900 text-white">
         <div id="study-option "class="w-[60vw] mb-10 col-start-2 col-end-2 row-start-1 row-end-1">
             <center>
+            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('block')">Block Mode</button>
             <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('card')">Study Mode</button>
             <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('test')">Test Mode</button>
             <button class="bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="shuffletest()">Shuffle Test</button>
@@ -35,6 +36,11 @@
                     </div>
                 </div>
                 </div>
+            </div>
+            <div id="blockframe" style="display: none;" class="relative bg-white/10 rounded-lg border border-white/30 m-10 h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2 row-end-2">
+                <iframe src="/blockblast" id="gameframe" class="w-full h-full">
+
+                </iframe>
             </div>
             <div id="counter" class="absolute right-[2vw] top-1/2 -translate-y-1/2 flex flex-col justify-center gap-8 bg-white/10 backdrop-blur-md rounded-lg border border-white/30 p-8 h-[50vh] w-[12vw] z-20">
                 <div class="text-center mt-[5%]">
@@ -69,6 +75,7 @@
     </body> 
 </html>
 <script>
+let block = false
 let wrongq = 0;
 let rightq = 0; 
 let currentmode = '';
@@ -79,6 +86,7 @@ let showingFront = true;
 let cardSet = null;
 let test = [];
 let timerInterval = null;
+const game = document.getElementById('gameframe').contentWindow
 const par = new URLSearchParams(window.location.search);
 const setname = decodeURIComponent(par.get("setname"));
 const timerBar = document.getElementById('timer');
@@ -92,6 +100,25 @@ const cardImage = document.getElementById('img');
 
 backDiv.style.display = 'none';
 let userStats = null;
+function resetGame() {
+    game.grid = Array(8).fill().map(() => Array(8).fill(null));
+    game.score = 0;
+    game.scoreDisplay.innerText = "0";
+    game.generateNewSet();
+}
+game.addEventListener('needBlocks', (event) => {
+    const scoreAtEmpty = event.detail.currentScore;
+    setTimeout(function(){
+            block = true
+    switchmode('test')
+    game.blockBlastGame.generateNewSet()
+    }, 500)
+    
+});
+game.addEventListener('gameOver', (event) =>{
+    alert('game over')
+    resetGame()
+})
 function moveItem(arr, fromIndex, toIndex) {
     const [item] = arr.splice(fromIndex, 1);
     
@@ -180,21 +207,39 @@ function next(){
     if (currentmode !== 'test') { currentIndex++; showingFront = false; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }
 }
 function switchmode(mode) {
+    // 1. Define IDs for each "group"
+    const testElements = ['test', 'counter'];
+    const cardElements = ['card-container', 'prev-button', 'next-button'];
+    const blockElements = ['blockframe'];
+
+    // 2. Logic for 'test' mode
     if (mode === 'test') {
-        currentmode = mode 
-        document.getElementById('test').style.display = 'block';
-        document.getElementById('card-container').style.display = 'none';
-        document.getElementById('prev-button').style.display = 'none';
-        document.getElementById('next-button').style.display = 'none';
-        document.getElementById('counter').style.display = 'block'
+        currentmode = mode;
+        // Show test
+        testElements.forEach(id => document.getElementById(id).style.display = 'block');
+        // Hide others
+        cardElements.forEach(id => document.getElementById(id).style.display = 'none');
+        blockElements.forEach(id => document.getElementById(id).style.display = 'none');
     }
+    
+    // 3. Logic for 'block' mode
+    else if (mode === 'block') {
+        currentmode = mode;
+        // Show block
+        blockElements.forEach(id => document.getElementById(id).style.display = 'block');
+        // Hide others
+        testElements.forEach(id => document.getElementById(id).style.display = 'none');
+        cardElements.forEach(id => document.getElementById(id).style.display = 'none');
+    }
+    
+    // 4. Logic for default/other mode
     else {
-        currentmode = mode
-        document.getElementById('card-container').style.display = 'block';
-        document.getElementById('test').style.display = 'none';
-        document.getElementById('prev-button').style.display = 'block';
-        document.getElementById('next-button').style.display = 'block'
-        document.getElementById('counter').style.display = 'none'
+        currentmode = mode;
+        // Show cards
+        cardElements.forEach(id => document.getElementById(id).style.display = 'block');
+        // Hide others
+        testElements.forEach(id => document.getElementById(id).style.display = 'none');
+        blockElements.forEach(id => document.getElementById(id).style.display = 'none');
     }
 }
 function generatetest() {
@@ -294,6 +339,9 @@ function check(ele){
         test[currentQuestion].right++
         test[currentQuestion].userans = 'r'
         rightq++
+        if (block){
+            switchmode('block')
+        }
     } else {
         const ele2 = document.getElementById('test')
         ele2.classList.remove('border-white/30')

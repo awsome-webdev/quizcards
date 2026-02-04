@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Block Blast - Responsive Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #0f172a;
+            color: white;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling in iframe */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            touch-action: none;
+        }
+
+        /* The scaler container ensures the game stays centered and proportional */
+        #scaler {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform-origin: center center;
+            transition: transform 0.1s ease-out;
+        }
+
+        canvas {
+            background: #1e293b;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            touch-action: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="scaler">
+        <div class="text-center mb-4">
+            <h1 class="text-2xl font-bold text-blue-400">BLOCK BLAST</h1>
+            <div class="bg-slate-700 px-4 py-1 rounded-full inline-block border border-slate-600">
+                <span class="text-slate-300 text-xs font-semibold uppercase tracking-wider">Score:</span>
+                <span id="scoreDisplay" class="text-lg font-mono text-white ml-2">0</span>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+<script>
+class BlockBlast {
+    constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.scoreDisplay = document.getElementById('scoreDisplay');
+        this.scaler = document.getElementById('scaler');
+        
+        // Logical Dimensions (Fixed base size for logic)
+        this.gridSize = 8;
+        this.cellSize = 50;
+        this.padding = 20;
+        this.handY = (this.gridSize * this.cellSize) + 120;
+        
+        this.canvas.width = (this.gridSize * this.cellSize) + (this.padding * 2);
+        this.canvas.height = this.handY + 160;
+
+        // State
+        this.grid = Array(this.gridSize).fill().map(() => Array(this.gridSize).fill(null));
+        this.hand = [];
+        this.dragging = null;
+        this.particles = [];
+        this.score = 0;
+        
+        this.shapes = [
+            { name: '1x1', data: [[1]] },
+            { name: '2x2', data: [[1, 1], [1, 1]] },
+            { name: '3x3', data: [[1, 1, 1], [1, 1, 1], [1, 1, 1]] },
+            { name: 'L3', data: [[1, 0], [1, 1]] },
+            { name: 'Line3', data: [[1, 1, 1]] },
+            { name: 'Line4', data: [[1, 1, 1, 1]] },
+            { name: 'T', data: [[0, 1, 0], [1, 1, 1]] }
+        ];
+
+        this.colors = ['#60a5fa', '#f87171', '#4ade80', '#fbbf24', '#a78bfa', '#f472b6'];
+
+        this.init();
+    }
+
+    init() {
+        this.generateNewSet();
+        this.attachListeners();
+        this.handleResize(); // Initial scale
+        window.addEventListener('resize', () => this.handleResize());
+        this.animate();
+    }
+
+    handleResize() {
+        const margin = 20; 
+        const scaleX = (window.innerWidth - margin) / this.scaler.offsetWidth;
+        const scaleY = (window.innerHeight - margin) / this.scaler.offsetHeight;
+        const scale = Math.min(scaleX, scaleY, 1.2); 
+        this.scaler.style.transform = `scale(${scale})`;
+    }
+
+    getMousePos(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const visualX = e.clientX - rect.left;
+        const visualY = e.clientY - rect.top;
+        return {
+            x: visualX * (this.canvas.width / rect.width),
+            y: visualY * (this.canvas.height / rect.height)
+        };
+    }
+
+    updateScore(points) {
+        this.score += points;
+        this.scoreDisplay.innerText = this.score;
+    }
+
+    // This is publically accessible via window.blockBlastGame.generateNewSet()
+    generateNewSet() {
+        this.hand = [];
+        const slotWidth = this.canvas.width / 3;
+        for (let i = 0; i < 3; i++) {
+            const shapeTemplate = this.shapes[Math.floor(Math.random() * this.shapes.length)];
+            const color = this.colors[Math.floor(Math.random() * this.colors.length)];
+            
+            const x = (slotWidth * i) + (slotWidth / 2);
+            const y = this.handY;
+
+            this.hand.push({
+                data: shapeTemplate.data,
+                color: color,
+                x: x, y: y,
+                originalX: x, originalY: y,
+                width: shapeTemplate.data[0].length * this.cellSize * 0.6,
+                height: shapeTemplate.data.length * this.cellSize * 0.6,
+                active: true
+            });
+        }
+        // Check if the new blocks can actually be placed
+        this.checkGameOver();
+    }
+
+    checkGameOver() {
+        // If hand is empty, we are waiting for new blocks, so technically game is not over
+        if (this.hand.every(b => !b.active)) return;
+
+        let possibleMoveFound = false;
+
+        // Check every active block in hand
+        for (const block of this.hand) {
+            if (!block.active) continue;
+
+            // Try to find at least one valid spot on the 8x8 grid
+            for (let r = 0; r < this.gridSize; r++) {
+                for (let c = 0; c < this.gridSize; c++) {
+                    if (this.canPlace(block.data, r, c)) {
+                        possibleMoveFound = true;
+                        break;
+                    }
+                }
+                if (possibleMoveFound) break;
+            }
+            if (possibleMoveFound) break;
+        }
+
+        // If no moves are possible for any active block
+        if (!possibleMoveFound) {
+            window.dispatchEvent(new CustomEvent('gameOver', { 
+                detail: { score: this.score } 
+            }));
+        }
+    }
+
+    attachListeners() {
+        const start = (e) => this.handleDown(e);
+        const move = (e) => { if(this.dragging) this.handleMove(e); };
+        const end = (e) => this.handleUp(e);
+
+        this.canvas.addEventListener('mousedown', start);
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', end);
+
+        this.canvas.addEventListener('touchstart', (e) => { e.preventDefault(); start(e.touches[0]); }, {passive: false});
+        window.addEventListener('touchmove', (e) => { move(e.touches[0]); }, {passive: false});
+        window.addEventListener('touchend', (e) => { end(e.changedTouches[0]); }, {passive: false});
+    }
+
+    handleDown(e) {
+        const pos = this.getMousePos(e);
+        for (const block of this.hand) {
+            if (!block.active) continue;
+            const bx = block.x - block.width/2;
+            const by = block.y - block.height/2;
+            if (pos.x >= bx && pos.x <= bx + block.width && pos.y >= by && pos.y <= by + block.height) {
+                this.dragging = { block: block, offsetX: pos.x - block.x, offsetY: pos.y - block.y };
+                break;
+            }
+        }
+    }
+
+    handleMove(e) {
+        const pos = this.getMousePos(e);
+        this.dragging.block.x = pos.x - this.dragging.offsetX;
+        this.dragging.block.y = pos.y - this.dragging.offsetY;
+    }
+
+    handleUp(e) {
+        if (!this.dragging) return;
+        const block = this.dragging.block;
+        const gridX = Math.round((block.x - (block.data[0].length * this.cellSize) / 2 - this.padding) / this.cellSize);
+        const gridY = Math.round((block.y - (block.data.length * this.cellSize) / 2 - this.padding) / this.cellSize);
+
+        if (this.canPlace(block.data, gridY, gridX)) {
+            this.placeBlock(block, gridY, gridX);
+            block.active = false;
+            
+            // Check if tray is empty
+            if (this.hand.every(b => !b.active)) {
+                window.dispatchEvent(new CustomEvent('needBlocks', { 
+                    detail: { score: this.score } 
+                }));
+            }
+        } else {
+            block.x = block.originalX;
+            block.y = block.originalY;
+        }
+        this.dragging = null;
+    }
+
+    canPlace(shape, row, col) {
+        for (let r = 0; r < shape.length; r++) {
+            for (let c = 0; c < shape[r].length; c++) {
+                if (shape[r][c]) {
+                    const tr = row + r;
+                    const tc = col + c;
+                    if (tr < 0 || tr >= this.gridSize || tc < 0 || tc >= this.gridSize || this.grid[tr][tc]) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    placeBlock(block, row, col) {
+        let cells = 0;
+        for (let r = 0; r < block.data.length; r++) {
+            for (let c = 0; c < block.data[r].length; c++) {
+                if (block.data[r][c]) {
+                    this.grid[row + r][col + c] = block.color;
+                    cells++;
+                }
+            }
+        }
+        this.updateScore(cells);
+        this.checkLines();
+        
+        // After placing a block and clearing lines, check if the remaining blocks fit
+        this.checkGameOver();
+    }
+
+    checkLines() {
+        let rows = [], cols = [];
+        for (let r = 0; r < this.gridSize; r++) if (this.grid[r].every(c => c !== null)) rows.push(r);
+        for (let c = 0; c < this.gridSize; c++) {
+            let full = true;
+            for (let r = 0; r < this.gridSize; r++) if (this.grid[r][c] === null) { full = false; break; }
+            if (full) cols.push(c);
+        }
+
+        const cleared = rows.length + cols.length;
+        if (cleared > 0) this.updateScore(cleared * 15 * cleared);
+
+        rows.forEach(r => { for(let c=0; c<this.gridSize; c++) { this.createParticles(r, c, this.grid[r][c]); this.grid[r][c] = null; } });
+        cols.forEach(c => { for(let r=0; r<this.gridSize; r++) { if(this.grid[r][c]) this.createParticles(r, c, this.grid[r][c]); this.grid[r][c] = null; } });
+    }
+
+    createParticles(r, c, color) {
+        const x = this.padding + c * this.cellSize + this.cellSize / 2;
+        const y = this.padding + r * this.cellSize + this.cellSize / 2;
+        for (let i = 0; i < 6; i++) {
+            this.particles.push({
+                x, y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12,
+                life: 1.0, color, size: Math.random()*5+2
+            });
+        }
+    }
+
+    drawBlock(shape, x, y, size, color, alpha = 1) {
+        this.ctx.save();
+        this.ctx.globalAlpha = alpha;
+        this.ctx.fillStyle = color;
+        const startX = x - (shape[0].length * size) / 2;
+        const startY = y - (shape.length * size) / 2;
+
+        shape.forEach((row, rIdx) => {
+            row.forEach((cell, cIdx) => {
+                if (cell) {
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(startX + cIdx * size + 2, startY + rIdx * size + 2, size - 4, size - 4, 8);
+                    this.ctx.fill();
+                    this.ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                    this.ctx.fillRect(startX + cIdx * size + 5, startY + rIdx * size + 5, size/4, size/4);
+                    this.ctx.fillStyle = color;
+                }
+            });
+        });
+        this.ctx.restore();
+    }
+
+    render() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        for (let r = 0; r < this.gridSize; r++) {
+            for (let c = 0; c < this.gridSize; c++) {
+                const x = this.padding + c * this.cellSize;
+                const y = this.padding + r * this.cellSize;
+                this.ctx.fillStyle = '#1e293b';
+                this.ctx.strokeStyle = '#334155';
+                this.ctx.beginPath();
+                this.ctx.roundRect(x + 2, y + 2, this.cellSize - 4, this.cellSize - 4, 6);
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                if (this.grid[r][c]) {
+                    this.drawBlock([[1]], x + this.cellSize/2, y + this.cellSize/2, this.cellSize, this.grid[r][c]);
+                }
+            }
+        }
+
+        if (this.dragging) {
+            const b = this.dragging.block;
+            const gx = Math.round((b.x - (b.data[0].length * this.cellSize)/2 - this.padding)/this.cellSize);
+            const gy = Math.round((b.y - (b.data.length * this.cellSize)/2 - this.padding)/this.cellSize);
+            if (this.canPlace(b.data, gy, gx)) {
+                const px = this.padding + gx * this.cellSize + (b.data[0].length*this.cellSize)/2;
+                const py = this.padding + gy * this.cellSize + (b.data.length*this.cellSize)/2;
+                this.drawBlock(b.data, px, py, this.cellSize, b.color, 0.3);
+            }
+        }
+
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+            if (p.life <= 0) this.particles.splice(i, 1);
+            else {
+                this.ctx.globalAlpha = p.life;
+                this.ctx.fillStyle = p.color;
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                this.ctx.fill();
+            }
+        }
+        this.ctx.globalAlpha = 1;
+
+        this.hand.forEach(block => {
+            if (block.active) {
+                const isDrag = this.dragging && this.dragging.block === block;
+                this.drawBlock(block.data, block.x, block.y, isDrag ? this.cellSize : this.cellSize * 0.7, block.color);
+            }
+        });
+    }
+
+    animate() {
+        this.render();
+        requestAnimationFrame(() => this.animate());
+    }
+}
+
+// Ensure the game is globally accessible
+window.blockBlastGame = new BlockBlast('gameCanvas');
+</script>
+</body>
+</html>
