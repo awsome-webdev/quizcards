@@ -322,10 +322,56 @@ def savetest():
         json.dump(current_stats, f, indent=4)
 
     return 'ok', 200
+@app.route('/allsets')
+@login_required
+def allsets():
+    return render_template('allsets.html')
 @app.route('/blockblast')
 @login_required
 def blocks():
     return render_template('blockblast.html')
+@app.route('/api/allcards')
+def allcards():
+    clear = request.args.get('clear')
+    user = str(request.args.get('user'))
+    title = str(request.args.get('title'))
+    root_dir = os.path.join(root, 'user_data') 
+    send = []
+    try:
+        with open(os.path.join(root, 'users.json'), 'r') as f:
+            userDB = json.load(f)
+    except Exception:
+        return jsonify([]), 500
+
+    leaderboard_list = []
+    if os.path.exists(root_dir):
+        folders = [f for f in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, f))]
+        
+        for x in folders:
+            match = [u for u in userDB if u.get('id') == x]
+            userOBJ = match[0] if match else None
+            username = userOBJ['username'] if userOBJ else f"Unknown ({x[:5]})"
+            stats_path = os.path.join(root_dir, x, 'cards.json')
+            if os.path.exists(stats_path):
+                try:
+                    with open(stats_path, 'r') as f:
+                        data = json.load(f)
+                        if (len(user) > 1 and len(title) > 1 and user != "None"):
+                            if username == user:
+                                for card in data:
+                                    if card['Title'] == title:
+                                        send.append(card)
+                        else:
+                            for card in data:
+                                if clear:
+                                    card['content'].clear()
+                                card['name'] = username
+                                send.append(card)
+                except Exception:
+                    return 'error', 500
+            else:
+                return 'error', 500
+    return jsonify(send), 200
 @app.route('/api/wrong')
 def wrong():
     file = f'user_data/{current_user.id}/stats.json'

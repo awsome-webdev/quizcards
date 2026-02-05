@@ -6,7 +6,7 @@
     <body class="grid place-items-center grid-cols-3 grid-rows-3 bg-gray-900 text-white">
         <div id="study-option "class="w-[60vw] mb-10 col-start-2 col-end-2 row-start-1 row-end-1">
             <center>
-            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('block')">Block Mode</button>
+            <button id="blockBtn" class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('block')">Block Mode</button>
             <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('card')">Study Mode</button>
             <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('test')">Test Mode</button>
             <button class="bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="shuffletest()">Shuffle Test</button>
@@ -89,6 +89,8 @@ let timerInterval = null;
 const game = document.getElementById('gameframe').contentWindow
 const par = new URLSearchParams(window.location.search);
 const setname = decodeURIComponent(par.get("setname"));
+const user = decodeURIComponent(par.get("user"));
+const title = decodeURIComponent(par.get('title'));
 const timerBar = document.getElementById('timer');
 
 const frontDiv = document.getElementById('front');
@@ -109,9 +111,11 @@ function resetGame() {
 game.addEventListener('needBlocks', (event) => {
     const scoreAtEmpty = event.detail.currentScore;
     setTimeout(function(){
-            block = true
+    block = true
+    document.getElementById('blockBtn').style.pointerEvents = 'none'
     switchmode('test')
     game.blockBlastGame.generateNewSet()
+    block = false
     }, 500)
     
 });
@@ -191,7 +195,8 @@ document.addEventListener('keydown', (e) => {
 async function getcards(name) {
     userStats = await fetchAndBuildJSON();
     
-    await fetch(`/api/cards`)
+    if(!user || user === "null" || user === "undefined"){
+            await fetch(`/api/cards`)
     .then(response => response.json())
     .then(data => {
         cardSet = data.find(c => c.Title === name);
@@ -202,17 +207,28 @@ async function getcards(name) {
             generatetest();
         }
     });
+    }
+    else{
+    await fetch(`/api/allcards?user=${user}&title=${title}`)
+    .then(response => response.json())
+    .then(data => {
+        cardSet = data[0]
+        if (cardSet && cardSet.content && cardSet.content.length > 0) {
+            currentIndex = 0;
+            showingFront = true;
+            showCard(currentIndex);
+            generatetest();
+        }
+    });
+    }
 }
 function next(){
     if (currentmode !== 'test') { currentIndex++; showingFront = false; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }
 }
 function switchmode(mode) {
-    // 1. Define IDs for each "group"
     const testElements = ['test', 'counter'];
     const cardElements = ['card-container', 'prev-button', 'next-button'];
     const blockElements = ['blockframe'];
-
-    // 2. Logic for 'test' mode
     if (mode === 'test') {
         currentmode = mode;
         // Show test
@@ -222,7 +238,6 @@ function switchmode(mode) {
         blockElements.forEach(id => document.getElementById(id).style.display = 'none');
     }
     
-    // 3. Logic for 'block' mode
     else if (mode === 'block') {
         currentmode = mode;
         // Show block
@@ -341,6 +356,7 @@ function check(ele){
         rightq++
         if (block){
             switchmode('block')
+            document.getElementById('blockBtn').style.pointerEvents = 'auto'
         }
     } else {
         const ele2 = document.getElementById('test')
