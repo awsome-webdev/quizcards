@@ -367,10 +367,10 @@ def allcards():
                                     card['content'].clear()
                                 card['name'] = username
                                 send.append(card)
-                except Exception:
-                    return 'error', 500
+                except Exception as e:
+                    return f'error {e}', 500
             else:
-                return 'error', 500
+                continue
     return jsonify(send), 200
 @app.route('/api/wrong')
 def wrong():
