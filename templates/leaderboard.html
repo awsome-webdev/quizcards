@@ -2,12 +2,24 @@
     <head>
         <title>Quiz Cards</title>
         <script src="https://cdn.tailwindcss.com"></script>
+            <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .sidebar-link.active { background: rgba(16, 185, 129, 0.1); color: #34d399; border-right: 3px solid #34d399; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        input, select, textarea { background: rgba(0,0,0,0.2) !important; color: white !important; border-color: rgba(255,255,255,0.1) !important; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #34d399 !important; }
+    </style>
     </head>
     <center>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-10">
     <h1 class="text-4xl font-bold mb-8 tracking-tight">Leaderboard</h1>
 
-    <div class="overflow-hidden rounded-lg border border-white/20 bg-white/10 backdrop-blur-md shadow-xl">
+    <div class="overflow-hidden rounded-lg glass shadow-xl">
         <table class="min-w-[60vw] text-left border-collapse">
             <thead>
                 <tr class="bg-white/10 border-b border-white/20">

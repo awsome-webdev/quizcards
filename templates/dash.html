@@ -2,14 +2,26 @@
     <head>
         <title>Quiz Cards</title>
         <script src="https://cdn.tailwindcss.com"></script>
+            <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .sidebar-link.active { background: rgba(16, 185, 129, 0.1); color: #34d399; border-right: 3px solid #34d399; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        input, select, textarea { background: rgba(0,0,0,0.2) !important; color: white !important; border-color: rgba(255,255,255,0.1) !important; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #34d399 !important; }
+    </style>
     </head>
     <body class="bg-gray-900 text-white w-full h-full">
         <div id="headstats" class="w-full h-[20vh] items-center justify-items-center grid grid-cols-[1fr_1fr]">
-            <div id="right" class="col-start-1 h-fit w-fit col-end-1 p-5 text-center border border-white/20 bg-white/10 backdrop-blur-md rounded-md">
+            <div id="right" class="col-start-1 h-fit w-fit col-end-1 p-5 text-center glass-panel rounded-md">
                 <p class="text-3xl">Questions answered right</p>
                 <p id="right-text" class="text-green-500 text-3xl">3</p>
             </div>
-            <div id="wrong" class="col-start-2 h-fit w-fit col-end-2 p-5 text-center border border-white/20 bg-white/10 backdrop-blur-md rounded-md">
+            <div id="wrong" class="col-start-2 h-fit w-fit col-end-2 p-5 text-center glass-panel rounded-md">
                 <p class="text-3xl">Questions answered wrong</p>
                 <p id="wrong-text" class="text-green-500 text-3xl">3</p>
             </div>
@@ -49,7 +61,7 @@ fetch('/api/right').then(res => res.text()).then(data => document.getElementById
     }
     function createcard(Title, cards, desc) {
         const div = document.createElement("div");
-        div.className = "bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-full w-[20vw] grid grid-rows-[1fr_auto]"
+        div.className = "glass-panel rounded-lg m-10 p-6 hover:cursor-pointer h-full w-[20vw] grid grid-rows-[1fr_auto]"
         div.innerHTML = `
         <div class="row-start-1 row-end-1" onclick="opencards('${Title}')">
             <h2 class="text-2xl mb-4">${Title}</h2>
