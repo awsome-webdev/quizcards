@@ -11,16 +11,19 @@
 </script>
     </head>
     <body class="grid place-items-center grid-cols-3 grid-rows-3 bg-gray-900 text-white">
-        <div id="study-option "class="w-[60vw] mb-10 col-start-2 col-end-2 row-start-1 row-end-1">
-            <center>
-            <button id="blockBtn" class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('block')">Block Mode</button>
-            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('card')">Study Mode</button>
-            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('test')">Test Mode</button>
-            <button class="bg-white/10 p-5 backdrop-blur-md rounded-md" onclick="shuffletest()">Shuffle Test</button>
-            <input type="checkbox" id="shuffle-checkbox" class="ml-10">
-            <label for="shuffle-checkbox">Shuffle Cards</label>
-            </center>
-        </div>
+    <div id="study-option" class="w-[60vw] flex justify-center items-center gap-4 mb-10 col-start-2 col-end-2 row-start-1 row-end-1">
+    
+    <button id="blockBtn" class="bg-white/10 p-5 backdrop-blur-md rounded-md max-[1300px]:p-3" onclick="switchmode('block')">Block Mode</button>
+    <button class="bg-white/10 p-5 backdrop-blur-md rounded-md max-[1300px]:text-sm max-[1300px]:p-3" onclick="switchmode('card')">Study Mode</button>
+    <button class="bg-white/10 p-5 backdrop-blur-md rounded-md max-[1300px]:text-sm max-[1300px]:p-3" onclick="switchmode('test')">Test Mode</button>
+    <button class="bg-white/10 p-5 backdrop-blur-md rounded-md max-[1300px]:text-sm max-[1300px]:p-3" onclick="shuffletest()">Shuffle Test</button>
+    
+    <div class="flex items-center bg-white/10 p-5 backdrop-blur-md rounded-md max-[1300px]:text-sm max-[1300px]:p-4">
+        <input type="checkbox" id="shuffle-checkbox" class="m-0">
+        <label for="shuffle-checkbox" class="ml-2 leading-none">Shuffle Cards</label>
+    </div>
+
+    </div>
             <button id="prev-button" class="col-start-1 row-start-2 row-end-2 bg-white/10 p-5 backdrop-blur-md rounded-md mr-[5%]" onclick="if (currentmode !== 'test') { currentIndex--; showingFront = true; showCard(currentIndex); } else { showtestquestion(--currentQuestion); }">Prev</button>
             <div id="test" class="relative bg-white/10 rounded-lg border border-white/30 m-10 h-[60vh] w-[60vw] col-start-2 col-end-2 row-start-2 row-end-2">
                 <div id="timer" class="pointer-events-none absolute z-10 left-[0px] top-[0px] w-[0%] h-[100%] bg-green-500/10"></div>

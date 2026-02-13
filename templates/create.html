@@ -43,7 +43,7 @@
         </div>
 
         <!-- RIGHT COLUMN: UPLOAD & CONTROLS -->
-        <div class="space-y-6">
+        <div class="space-y-6 h-full">
             <div id="upload" class="bg-gray-800 p-6 rounded-xl border border-white/10 sticky top-6">
                 <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -74,12 +74,51 @@
 
                 <div id="statusMessage" class="mt-4 p-3 rounded-lg text-sm hidden text-center"></div>
             </div>
+            <div id="AI" class="bg-gray-800 p-6 rounded-xl border sticky border-white/10 top-6">
+                <h1 class="text-xl font-bold mb-3">Create With Ai</h1>
+                <textarea id="Ai-message" placeholder="Describe what content you want" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500"></textarea>
+                <input type="number" min="0" max="20" id="target" placeholder="target amount cards (max of 20)" class="w-full bg-gray-900 mb-3 border border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:border-blue-500">
+                <br>
+                <button onclick="createwithai()" class="w-full bg-gradient-to-r from-[#4285F4] via-[#9b72cb] to-[#d96570] text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all shadow-lg hover:shadow-indigo-500/40">
+                    Create
+                </button>
+                <div id="aiStatusMessage" style="display: none;" class="mt-4 p-3 rounded-lg text-sm bg-green-900/30 text-green-400"></div>
+            </div>
         </div>
     </div>
 
     <script>
+setInterval(function(){
+const uploadDiv = document.getElementById('upload');
+const aiDiv = document.getElementById('AI');
+const offset = uploadDiv.offsetHeight + 60;
+aiDiv.style.top = offset + 'px';
+}, 200)
         let editsave = false;
         let cardCount = 0;
+        function setaistatus(message, time=null){
+            const ele = document.getElementById('aiStatusMessage')
+            ele.innerText = message
+            ele.style.display = 'block'
+            if (time){
+                setTimeout(function(){
+                    ele.style.display = 'none'
+                }, time)
+            }
+        }
+        async function createwithai(){
+            const message = document.getElementById('Ai-message')
+            const target = document.getElementById('target')
+            setaistatus('Creating your set...')
+            await fetch(`/api/createwithai?message=${message.value}&target=${target.value}`).then(res => res.json()).then(data => {
+                data.forEach(card => {
+                    createCard(term=card.question, definition=card.answer)
+                })
+            })
+            setaistatus('DONE!', time=2000)
+            message.value = ''
+            target.value = 0
+        }
         function fileToDataUrl(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();

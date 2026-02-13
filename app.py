@@ -274,7 +274,7 @@ if OpenRouter:
 def ask(prompt):
     if not client: return "AI Client not initialized"
     response = client.chat.send(
-        model="qwen/qwen3-32b",
+        model="google/gemini-3-flash-preview",
         messages=[
             {"role": "user", "content": prompt}
         ],
@@ -301,6 +301,61 @@ def search(query, type="web"):
         return data.get('news', {}).get('results', [])
     else:
         return None
+import json
+
+@app.route('/api/createwithai')
+def createai():
+    message = request.args.get('message')
+    if not message:
+        return json.dumps({"error": "No prompt provided"}), 400
+
+    accumulated_context = ""
+    max_iterations = 4  # Increased slightly to allow for deep research
+    target_questions = request.args.get('target')
+    for i in range(max_iterations):
+        # The prompt defines two clear 'tools' for the AI: SEARCH or EXIT
+        agent_prompt = f"""
+        Topic: {message}
+        Research so far: {accumulated_context if accumulated_context else "No data yet."}
+
+        You are a research assistant. You must gather enough data to try and create {target_questions} educational flashcards.
+        Each card's answer MUST contain 3 distinct facts separated by <br> tags.
+
+        YOUR OPTIONS:
+        1. If you need more info, reply with: SEARCH: [QUERY max of 5 words]
+        2. If you have sufficient info, reply with: EXIT: [{{ "question": "...", "answer": "Back of card/definition/facts", "image": null }}, ...]
+
+        Choose one and return nothing else.
+        """
+        ai_response = ask(agent_prompt).strip()
+
+        # OPTION 1: AI wants more data
+        if ai_response.startswith("SEARCH:"):
+            query = ai_response.replace("SEARCH:", "").strip().strip('"')
+            search_results = search(query, type="web")
+            
+            # Format and add to context
+            for res in search_results[:2]:
+                accumulated_context += f"\nSource: {res.get('title')}\nContent: {res.get('snippet')}\n"
+            continue 
+
+        # OPTION 2: AI calls the EXIT function
+        if ai_response.startswith("EXIT:"):
+            try:
+                # Extract the JSON part after the EXIT: prefix
+                raw_json = ai_response.split("EXIT:", 1)[1].strip()
+                # Clean potential markdown backticks
+                clean_json = raw_json.replace("```json", "").replace("```", "").strip()
+                
+                card_set = json.loads(clean_json)
+                return json.dumps(card_set)
+            except (ValueError, IndexError, json.JSONDecodeError) as e:
+                print(f"Exit parsing error on iteration {i}: {e}")
+                # If it failed to format JSON correctly, let it try one more time
+                accumulated_context += "\nSystem Note: Your last EXIT call had invalid JSON formatting. Please try again."
+                continue
+
+    return json.dumps({"error": "AI reached iteration limit without calling EXIT properly"}), 500
 @app.route('/api/savetest', methods=["POST"])
 def savetest():
     incoming_data = request.json
