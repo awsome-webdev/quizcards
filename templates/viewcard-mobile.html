@@ -382,11 +382,14 @@ window.addEventListener('beforeunload', (event) => {
     test.forEach(function(item) {
         if (item['userans'] !== '' && item['userans'] !== 're-queued') {
             let data = {
+                setname : setname,
                 question: item.question.startsWith('data:') ? 'image' : item.question,
                 answer: item.answer.startsWith('data:') ? 'image' : item.answer, 
                 options: item.options.map(opt => opt.startsWith('data:') ? 'image' : opt),
                 userans: item.userans,
                 right: item.right,
+                ...(item.right > 1 && { percent: ((item.right / test.length) * 100).toFixed(0) + '%' })
+                
             };
             test2.push(data);
         }

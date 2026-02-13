@@ -314,6 +314,8 @@ def savetest():
 
     current_stats['right'] += int(incoming_data.get('right', 0))
     current_stats['wrong'] += int(incoming_data.get('wrong', 0))
+    if incoming_data.get('percent'):
+        current_stats.setdefault(incoming_data.get('setname'), []).append(incoming_data.get('percent'))
     
     if 'test' in incoming_data:
         current_stats['questions'].extend(incoming_data['test'])
