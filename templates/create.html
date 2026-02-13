@@ -114,7 +114,7 @@ aiDiv.style.top = offset + 'px';
                 data.forEach(card => {
                     createCard(term=card.question, definition=card.answer)
                 })
-            })
+            }).catch(err => console.error("Error:", err));
             setaistatus('DONE!', time=2000)
             message.value = ''
             target.value = 0
