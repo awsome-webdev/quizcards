@@ -6,56 +6,54 @@
     <title>Quiz Cards</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Hide scrollbars for a cleaner app-like feel */
-        body { overflow: hidden; }
+        /* Ensuring the body takes up exactly the visible space */
+        body { 
+            margin: 0;
+            overflow: hidden; 
+        }
         iframe { border: none; }
     </style>
 </head>
-<body class="bg-gray-900 text-white flex flex-col h-screen">
+<body class="bg-gray-900 text-white flex flex-col h-[100dvh] w-screen">
 
-    <main class="flex-grow w-full h-full">
+    <main class="flex-grow w-full overflow-hidden">
         <iframe 
             id="content-frame"
             src="/dash" 
             title="Quiz Content"
-            class="w-full h-[calc(100%-80px)] top-0">
+            class="w-full h-full">
         </iframe>
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 h-[80px] bg-gray-800/80 backdrop-blur-lg border-t border-white/10 px-4 flex justify-around items-center z-50" aria-label="Main Navigation">
+    <nav class="h-[80px] shrink-0 bg-gray-800/80 backdrop-blur-lg border-t border-white/10 px-4 flex justify-around items-center z-50" aria-label="Main Navigation">
         
         <button 
             onclick="setframe('dash')" 
-            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Dashboard">
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <span class="text-xs font-medium uppercase tracking-wider">Dash</span>
         </button>
 
         <button 
             onclick="setframe('create')" 
-            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Create Quiz">
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <span class="text-xs font-medium uppercase tracking-wider">Create</span>
         </button>
 
         <button 
             onclick="setframe('leaderboard')" 
-            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Leaderboard">
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <span class="text-xs font-medium uppercase tracking-wider">Leader</span>
         </button>
 
         <button 
             onclick="setframe('allsets')" 
-            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Leaderboard">
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <span class="text-xs font-medium uppercase tracking-wider">Explore</span>
         </button>
 
         <a 
             href="/logout" 
-            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-red-500"
-            aria-label="Logout">
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-red-500">
             <span class="text-xs font-medium uppercase tracking-wider text-red-400">Logout</span>
         </a>
 
