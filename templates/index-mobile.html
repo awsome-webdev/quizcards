@@ -1,30 +1,71 @@
-<html>
-    <head>
-        <title>Quiz Cards</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-gray-900 top-0 left-0 w-[100vw] text-white">
-        <div class="flex flex-row justify-center fixed z-10 bottom-[0px] left-[0px] w-[100vw] h-[7vh] bg-white/10 border-white/20 backdrop-blur-md">
-            <div class="text-center rounded-full bg-white/10 backdrop-blur-md border-white/20 w-fit p-5 m-5" onclick="setframe('dash')">
-                <p class="text-3xl">Dash</p>
-            </div>
-            <div class="text-center rounded-full bg-white/10 backdrop-blur-md border-white/20 w-fit p-5 m-5" onclick="setframe('create')">
-                <p class="text-3xl">Create</p>
-            </div>
-            <div class="text-center rounded-full bg-white/10 backdrop-blur-md border-white/20 w-fit p-5 m-5" onclick="setframe('leaderboard')">
-                <p class="text-3xl">Leaderboard</p>
-            </div>
-            <div class="text-center rounded-full bg-white/10 backdrop-blur-md border-white/20 w-fit p-5 m-5">
-                <a href="/logout" class="text-3xl">Logout</a>
-            </div>
-        </div>
-        <iframe src="/dash" class="absolute top-0 right-0 h-[100vh] w-[100vw] border-none">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Cards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Hide scrollbars for a cleaner app-like feel */
+        body { overflow: hidden; }
+        iframe { border: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col h-screen">
 
+    <main class="flex-grow w-full h-full pb-[80px]">
+        <iframe 
+            id="content-frame"
+            src="/dash" 
+            title="Quiz Content"
+            class="w-full h-full">
         </iframe>
-    </body>
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 h-[80px] bg-gray-800/80 backdrop-blur-lg border-t border-white/10 px-4 flex justify-around items-center z-50" aria-label="Main Navigation">
+        
+        <button 
+            onclick="setframe('dash')" 
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Dashboard">
+            <span class="text-xs font-medium uppercase tracking-wider">Dash</span>
+        </button>
+
+        <button 
+            onclick="setframe('create')" 
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Create Quiz">
+            <span class="text-xs font-medium uppercase tracking-wider">Create</span>
+        </button>
+
+        <button 
+            onclick="setframe('leaderboard')" 
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Leaderboard">
+            <span class="text-xs font-medium uppercase tracking-wider">Leader</span>
+        </button>
+
+        <button 
+            onclick="setframe('allsets')" 
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Leaderboard">
+            <span class="text-xs font-medium uppercase tracking-wider">Explore</span>
+        </button>
+
+        <a 
+            href="/logout" 
+            class="flex flex-col items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-red-500"
+            aria-label="Logout">
+            <span class="text-xs font-medium uppercase tracking-wider text-red-400">Logout</span>
+        </a>
+
+    </nav>
+
+    <script>
+        function setframe(page) {
+            const frame = document.getElementById('content-frame');
+            frame.src = `/${page}`;
+        }
+    </script>
+</body>
 </html>
-<script>
-    function setframe(page) {
-        document.querySelector("iframe").src = `/${page}`;
-    }
-</script>

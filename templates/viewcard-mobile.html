@@ -1,412 +1,629 @@
-<html>
-    <head>
-        <title>Quiz Cards</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="grid place-items-center grid-cols-3 grid-rows-3 bg-gray-900 text-white">
-        <div id="study-option "class="w-[80vw] mb-6% col-start-2 col-end-2 row-start-1 row-end-1">
-            <center>
-            <button class="bg-white/10 text-3xl p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('card')">Study Mode</button>
-            <button class="bg-white/10 text-3xl p-5 backdrop-blur-md rounded-md mr-10" onclick="switchmode('test')">Test Mode</button>
-            <button class="bg-white/10 text-3xl p-5 backdrop-blur-md rounded-md" onclick="shuffletest()">Shuffle Test</button><br><br>
-            <input type="checkbox" id="shuffle-checkbox" class="ml-10 text-3xl scale-[150%]">
-            <label for="shuffle-checkbox" class="text-3xl mr-10">Shuffle Cards</label>
-            </center>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>Quiz Cards Mobile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+        window.pipeline = pipeline;
+        env.allowLocalModels = false;
+        window.dispatchEvent(new Event('transformersReady'));
+    </script>
+    <style>
+        /* Custom scrollbar for mobile sleekness */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+        /* Prevent text selection on game UI */
+        .no-select { user-select: none; -webkit-user-select: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-4 gap-4 overflow-x-hidden">
+
+    <div class="w-full max-w-2xl flex flex-col gap-3">
+        
+        <div id="counter" class="flex justify-between items-center bg-white/10 backdrop-blur-md rounded-lg border border-white/30 p-3 px-6 shadow-lg">
+            <div class="text-center">
+                <p class="text-[10px] uppercase tracking-widest opacity-60">Wrong</p>
+                <p id="wrong" class="text-2xl font-bold text-red-400">0</p>
+            </div>
+            <div class="h-8 w-[1px] bg-white/20"></div>
+            <div class="text-center">
+                <p class="text-[10px] uppercase tracking-widest opacity-60">Right</p>
+                <p id="right" class="text-2xl font-bold text-green-400">0</p>
+            </div>
         </div>
-            <button id="prev-button" class="text-3xl col-start-1 row-start-3 row-end-3 bg-white/10 p-10 backdrop-blur-md rounded-md min-w-[70%] top-[70%]" onclick="if (currentmode !== 'test') { currentIndex--; showingFront = true; showCard(currentIndex); } else { showtestquestion(--currentQuestion); }">Prev</button>
-            <div id="test" class="relative bg-white/10 rounded-lg border border-white/30 m-10 h-[60vh] w-[80vw] col-start-2 col-end-2 row-start-2 row-end-2">
-                <div id="timer" class="pointer-events-none absolute z-10 left-[0px] top-[0px] w-[0%] h-[100%] bg-green-500/10"></div>
-                <div class="w-full top-[0px] left-[0px] max-h-[100%] p-6 overflow-y-scroll">
-                <progress value="50" max="100" class="top-0px w-full mb-5" id="test-p"></progress>
-                <h1 id="q" class="text-6xl mb-[10%] m-[5%]">Question</h1>
-                <div id="options" class="relative flex flex-col auto-rows-auto gap-4 mt-6 w-[100%] min-h-[30%] max-h-[70%]">
-                    <!-- Options will be populated here -->
-                    <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
-                        <p>Question1</p>
-                    </div>
-                    <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
-                        <p>Question2</p>
-                    </div>
-                    <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
-                        <p>Question3</p>
-                    </div>
-                    <div class="bg-white/20 rounded-lg border border-white/30 flex items-center justify-center hover:cursor-pointer">
-                        <p>Question4</p>
-                    </div>
-                </div>
-                </div>
-            </div>
-            <div class="bg-white/10 rounded-lg border border-white/30 m-10 p-6 hover:cursor-pointer h-[50vh] w-[80vw] col-start-2 col-end-2 row-start-2" id="card-container">
-                <div id="front">
-                <center class="w-100% h-100%">
-                <p id="front-content" class="text-2xl"></p>
-                <img id="img" src="" alt="" class="max-h-[50%] max-w-[70%] min-w-[400px] mt-4">
-                </center>
-            </div>
-            <div id="back">
-                <center>
-                <p id="back-content" class="text-2xl"></p>
-                </center>
-            </div>
-            <center>
-            <p id="progress" class="absolute text-white text-3xl left-[42%] bottom-[30%]"></p>
-            </center>
-            </div>
-            <button id="next-button" class="text-3xl min-w-[70%] col-start-3 row-start-3 row-end-3s bg-white/10 p-10 backdrop-blur-md rounded-md" onclick="if (currentmode !== 'test') { currentIndex++; showingFront = true; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }">Next</button>
-    </body> 
-</html>
-<script>
-let wrongq = 0;
-let rightq = 0; 
-let currentmode = '';
-switchmode('card')
-let currentIndex = 0;
-let currentQuestion = 0;
-let showingFront = true;
-let cardSet = null;
-let test = [];
-let timerInterval = null;
-const par = new URLSearchParams(window.location.search);
-const setname = par.get("setname");
-const timerBar = document.getElementById('timer');
 
-const frontDiv = document.getElementById('front');
-const backDiv = document.getElementById('back');
-const frontContent = document.getElementById('front-content');
-const backContent = document.getElementById('back-content');
-const cardContainer = document.getElementById('card-container');
-const cardImage = document.getElementById('img');
+        <div id="study-option" class="flex flex-wrap justify-center gap-2">
+            <button id="blockBtn" class="bg-white/10 px-4 py-3 backdrop-blur-md rounded-md text-sm flex-1 min-w-[80px] hover:bg-white/20 transition active:scale-95" onclick="switchmode('block')">Block Mode</button>
+            <button class="bg-white/10 px-4 py-3 backdrop-blur-md rounded-md text-sm flex-1 min-w-[80px] hover:bg-white/20 transition active:scale-95" onclick="switchmode('card')">Study</button>
+            <button class="bg-white/10 px-4 py-3 backdrop-blur-md rounded-md text-sm flex-1 min-w-[80px] hover:bg-white/20 transition active:scale-95" onclick="switchmode('test')">Test</button>
+            <button class="bg-white/10 px-4 py-3 backdrop-blur-md rounded-md text-sm flex-1 min-w-[80px] hover:bg-white/20 transition active:scale-95" onclick="shuffletest()">Shuffle</button>
+            
+            <div class="flex items-center justify-center bg-white/10 px-4 py-3 backdrop-blur-md rounded-md text-sm flex-1 min-w-[120px]">
+                <input type="checkbox" id="shuffle-checkbox" class="w-4 h-4 accent-blue-500">
+                <label for="shuffle-checkbox" class="ml-2 leading-none whitespace-nowrap">Shuffle Cards</label>
+            </div>
+        </div>
+    </div>
 
-backDiv.style.display = 'none';
-
-let userStats = null;
-function moveItem(arr, fromIndex, toIndex) {
-    const [item] = arr.splice(fromIndex, 1);
-    
-
-    arr.splice(toIndex, 0, item);
-    
-    return arr;
-}
-async function fetchAndBuildJSON() {
-    const response = await fetch('/api/getstats');
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    
-    let result = ''; 
-    
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    <div class="relative w-full max-w-2xl flex-grow flex flex-col">
         
-        result += decoder.decode(value, { stream: true });
+<div id="test" class="relative bg-white/10 rounded-xl border border-white/30 min-h-[60vh] flex flex-col shadow-xl overflow-hidden" style="display:none;">
+    <div id="timer" class="pointer-events-none absolute z-10 left-0 top-0 w-0 h-full bg-green-500/10 transition-all duration-75"></div>
+    
+    <div class="w-full h-full p-4 z-20 flex flex-col gap-2">
+        <progress value="50" max="100" class="w-full h-2 rounded-full mb-2 [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-white/10 [&::-webkit-progress-value]:bg-blue-400 [&::-webkit-progress-value]:rounded-full" id="test-p"></progress>
         
-        console.log(`Downloaded ${result.length} characters...`);
-    }
+        <div id="q-container" class="flex flex-col items-center justify-center min-h-[120px] mb-4">
+            <h1 id="q" class="text-xl md:text-2xl font-semibold text-center w-full break-words">Question</h1>
+        </div>
+        
+        <div id="options" class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full pb-4">
+            </div>
+    </div>
+</div>
 
-    const finalObject = JSON.parse(result);
-    return finalObject;
-}
-function updatecount(){
-    //do nothing for now
-}
-function showCard(index, event=false) {
-    const shuffle = document.getElementById('shuffle-checkbox').checked;
-    if (shuffle && !event) {
-        index = Math.floor(Math.random() * cardSet.content.length);
-        currentIndex = index;
-    }
-    if (!cardSet || !cardSet.content || index < 0 || index >= cardSet.content.length) return;
-    frontContent.innerHTML = cardSet.content[index].question;
-    backContent.innerHTML = cardSet.content[index].answer;
-    cardImage.src = cardSet.content[index].image || '';
-    frontDiv.style.display = showingFront ? '' : 'none';
-    backDiv.style.display = showingFront ? 'none' : '';
-    document.getElementById('progress').textContent = `Card ${index + 1} of ${cardSet.content.length}`;
-}
+        <div id="blockframe" class="relative bg-white/10 rounded-xl border border-white/30 h-[60vh] w-full shadow-xl overflow-hidden" style="display: none;">
+            <iframe src="/blockblast" id="gameframe" class="w-full h-full border-none"></iframe>
+        </div>
 
-cardContainer.addEventListener('click', () => {
-    showingFront = !showingFront;
-    showCard(currentIndex, event=true);
-});
+        <div id="card-container" class="bg-white/10 rounded-xl border border-white/30 h-[60vh] w-full relative perspective-1000 hover:cursor-pointer shadow-xl transition-all active:scale-[0.99]" onclick="void(0)"> <div id="front" class="w-full h-full flex flex-col justify-center items-center p-6 text-center">
+                <div class="flex-grow flex flex-col justify-center items-center w-full">
+                    <p id="front-content" class="text-xl md:text-3xl font-medium"></p>
+                    <img id="img" src="" alt="" class="max-h-[200px] md:max-h-[300px] max-w-full rounded-md object-contain mt-4 shadow-md">
+                </div>
+            </div>
 
-document.addEventListener('keydown', (e) => {
-    if (!cardSet) return;
-    if (e.key === 'ArrowRight') {
-        if (currentIndex < cardSet.content.length - 1) {
-            currentIndex++;
-            showingFront = true;
-            showCard(currentIndex);
-        }
-    } else if (e.key === 'ArrowLeft') {
-        if (currentIndex > 0) {
-            currentIndex--;
-            showingFront = true;
-            showCard(currentIndex);
-        }
-    }
-});
+            <div id="back" class="w-full h-full flex flex-col justify-center items-center p-6 text-center hidden">
+                <p id="back-content" class="text-xl md:text-3xl font-medium overflow-y-auto max-h-full w-full"></p>
+            </div>
 
-async function getcards(name) {
-    userStats = await fetchAndBuildJSON();
-    
-    await fetch(`/api/cards`)
-    .then(response => response.json())
-    .then(data => {
-        cardSet = data.find(c => c.Title === name);
-        if (cardSet && cardSet.content && cardSet.content.length > 0) {
-            currentIndex = 0;
-            showingFront = true;
-            showCard(currentIndex);
-            generatetest();
-        }
-    });
-}
-function next(){
-    if (currentmode !== 'test') { currentIndex++; showingFront = false; showCard(currentIndex); } else { showtestquestion(++currentQuestion); }
-}
-function switchmode(mode) {
-    if (mode === 'test') {
-        currentmode = mode 
-        document.getElementById('test').style.display = 'block';
-        document.getElementById('card-container').style.display = 'none';
-        document.getElementById('prev-button').style.display = 'none';
-        document.getElementById('next-button').style.display = 'none';
-    }
-    else {
-        currentmode = mode
-        document.getElementById('card-container').style.display = 'block';
-        document.getElementById('test').style.display = 'none';
-        document.getElementById('prev-button').style.display = 'block';
-        document.getElementById('next-button').style.display = 'block'
-    }
-}
-function generatetest() {
-    if (!cardSet || !cardSet.content) return;
-    
-    test = [];
-    let content = cardSet.content;
+            <div class="absolute bottom-4 left-0 w-full text-center pointer-events-none">
+                <p id="progress" class="text-white/70 text-sm bg-black/20 px-3 py-1 rounded-full inline-block"></p>
+            </div>
+        </div>
 
-    content.forEach(data => {
-        let wrongOptions = content
-            .filter(card => card.answer !== data.answer)
-            .map(card => card.answer !== '' ? card.answer : card.image);
+    </div>
 
-        wrongOptions.sort(() => Math.random() - 0.5);
-        let options = wrongOptions.slice(0, 3);
+    <div class="w-full max-w-2xl grid grid-cols-2 gap-4 mb-4" id="nav-buttons">
+        <button id="prev-button" class="bg-white/10 p-4 backdrop-blur-md rounded-lg border border-white/20 text-lg font-semibold active:bg-white/30 transition-colors" onclick="if (currentmode !== 'test') { currentIndex--; showingFront = true; showCard(currentIndex); } else { showtestquestion(--currentQuestion); }">
+            ← Prev
+        </button>
+        <button id="next-button" class="bg-white/10 p-4 backdrop-blur-md rounded-lg border border-white/20 text-lg font-semibold active:bg-white/30 transition-colors" onclick="nextBtnAction()">
+            Next →
+        </button>
+    </div>
 
-        let isHard = false;
-        if (userStats && userStats.wrong_questions) {
-            const wrongEntry = userStats.wrong_questions.find(q => q.text === data.question);
-            if (wrongEntry && wrongEntry.count > 1) isHard = true;
+    <script>
+        // --- Core Logic Preserved & Adapted ---
+
+        let block = false
+        let wrongq = 0;
+        let rightq = 0; 
+        let currentmode = '';
+        
+        // Initialize
+        let currentIndex = 0;
+        let currentQuestion = 0;
+        let showingFront = true;
+        let cardSet = null;
+        let test = [];
+        let timerInterval = null;
+        
+        // DOM Elements
+        const game = document.getElementById('gameframe').contentWindow
+        const par = new URLSearchParams(window.location.search);
+        const setname = decodeURIComponent(par.get("setname"));
+        const user = decodeURIComponent(par.get("user"));
+        const title = decodeURIComponent(par.get('title'));
+        const timerBar = document.getElementById('timer');
+        const frontDiv = document.getElementById('front');
+        const backDiv = document.getElementById('back');
+        const frontContent = document.getElementById('front-content');
+        const backContent = document.getElementById('back-content');
+        const cardContainer = document.getElementById('card-container');
+        const cardImage = document.getElementById('img');
+
+        // Initial Setup
+        switchmode('card')
+        backDiv.style.display = 'none';
+        let userStats = null;
+
+        // Wrapper for next button logic
+        function nextBtnAction() {
+            if (currentmode !== 'test') { 
+                currentIndex++; 
+                showingFront = true; 
+                showCard(currentIndex); 
+            } else { 
+                showtestquestion(++currentQuestion); 
+            }
         }
 
-        test.push({
-            question: data.question === '' ? data.image : data.question,
-            answer: data.answer !== '' ? data.answer : data.image,
-            options: options,
-            userans: '',
-            right: 0,
-            isHard: isHard
+        function resetGame() {
+            if(game.grid) {
+                game.grid = Array(8).fill().map(() => Array(8).fill(null));
+                game.score = 0;
+                if(game.scoreDisplay) game.scoreDisplay.innerText = "0";
+                if(game.generateNewSet) game.generateNewSet();
+            }
+        }
+
+        // Game Event Listeners
+        // Note: added checks to ensure game object exists before accessing
+        try {
+            game.addEventListener('needBlocks', (event) => {
+                const scoreAtEmpty = event.detail.currentScore;
+                setTimeout(function(){
+                    block = true
+                    document.getElementById('blockBtn').style.opacity = '0.5';
+                    document.getElementById('blockBtn').style.pointerEvents = 'none';
+                    switchmode('test')
+                    if(game.blockBlastGame) game.blockBlastGame.generateNewSet();
+                }, 500)
+            });
+            game.addEventListener('gameOver', (event) =>{
+                alert('game over')
+                resetGame()
+            });
+        } catch(e) {
+            console.log("Game iframe not fully loaded yet");
+        }
+
+        async function fetchAndBuildJSON() {
+            try {
+                const response = await fetch('/api/getstats');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let result = ''; 
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    result += decoder.decode(value, { stream: true });
+                }
+                const finalObject = JSON.parse(result);
+                return finalObject;
+            } catch (e) {
+                console.error("Stats fetch error", e);
+                return null;
+            }
+        }
+
+        function updatecount(){
+            document.getElementById('wrong').textContent = wrongq
+            document.getElementById('right').textContent = rightq
+        }
+
+        function showCard(index, event=false) {
+            const shuffle = document.getElementById('shuffle-checkbox').checked;
+            if (shuffle && !event) {
+                index = Math.floor(Math.random() * (cardSet?.content?.length || 1));
+                currentIndex = index;
+            }
+            if (!cardSet || !cardSet.content || index < 0 || index >= cardSet.content.length) return;
+            
+            frontContent.innerHTML = cardSet.content[index].question;
+            backContent.innerHTML = cardSet.content[index].answer;
+            
+            if(cardSet.content[index].image) {
+                cardImage.src = cardSet.content[index].image;
+                cardImage.style.display = 'block';
+            } else {
+                cardImage.style.display = 'none';
+            }
+
+            frontDiv.style.display = showingFront ? 'flex' : 'none'; // changed to flex for centering
+            backDiv.style.display = showingFront ? 'none' : 'flex';  // changed to flex
+            
+            document.getElementById('progress').textContent = `Card ${index + 1} of ${cardSet.content.length}`;
+        }
+
+        cardContainer.addEventListener('click', () => {
+            showingFront = !showingFront;
+            showCard(currentIndex, true);
         });
-    });
 
-    shuffletest();
-}
-function showtestquestion(index){
-    if (!test || index < 0 || index >= test.length) return;
-    
-    currentQuestion = index;
-    
+        // Keyboard Support
+        document.addEventListener('keydown', (e) => {
+            if (!cardSet) return;
+            if (e.key === 'ArrowRight') {
+                if (currentIndex < cardSet.content.length - 1) {
+                    currentIndex++;
+                    showingFront = true;
+                    showCard(currentIndex);
+                }
+            } else if (e.key === 'ArrowLeft') {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    showingFront = true;
+                    showCard(currentIndex);
+                }
+            }
+        });
 
-    const progress = document.getElementById('test-p');
-    progress.setAttribute('value', index);
-
-    const q = test[index];
-    const parent = document.getElementById('options');
-    const question = document.getElementById('q');
-
-
-    let alloptions = [...q.options, q.answer];
-    alloptions.sort(() => Math.random() - 0.5);
-
-
-    question.innerHTML = q.question.startsWith('data:image') 
-        ? `<img src="${q.question}" class="max-h-[50vh] max-w-[50vw] min-h-[50%] min-w-[50%]  mx-auto rounded-lg">` 
-        : q.question;
-
-    parent.innerHTML = '';
-
-
-    alloptions.forEach(opt => {
-        const safeValue = opt.replace(/"/g, '&quot;'); 
-
-        parent.innerHTML += `
-            <div 
-                data-val="${safeValue}" 
-                class="bg-white/20 mt-[5%] rounded-lg border border-white/30 flex flex-col items-center justify-center hover:bg-white/30 hover:cursor-pointer p-4 transition-all" 
-                onclick="check(this)"
-            >
-                <div class="pointer-events-none text-4xl">
-                    ${truncateToDetails(opt)}
-                </div>
-            </div>
-        `;
-    });
-}
-function check(ele){
-    const allOptions = document.getElementById('options').children;
-    for (let child of allOptions) {
-        child.classList.remove('border-green-500', 'border-red-500', 'bg-green-500/20', 'bg-red-500/20');
-        child.classList.add('border-white/30'); // Reset to default
-    }
-
-    let selected = ele.getAttribute('data-val');
-    let answerq = test[currentQuestion].answer;
-
-
-    if (selected === answerq) {
-        ele.classList.remove('border-white/30');
-        ele.classList.add('border-green-500', 'bg-green-500/20');
-        const ele2 = document.getElementById('test')
-        ele2.classList.remove('bg-white/10')
-        ele2.classList.add('bg-green-500/10')
-        ele2.classList.remove('border-white/30')
-        ele2.classList.add('border-green-500/20')
-        const right = document.querySelector('div[data-val="'+ answerq +'"]')
-        right.classList.remove('bg-white/10')
-        right.classList.add('bg-green-500/30')
-        right.classList.remove('border-white/30')
-        right.classList.add('border-green-500/20')
-        startTimer(2, 'green')
-        test[currentQuestion].right++
-        test[currentQuestion].userans = 'r'
-        rightq++
-    } else {
-        const ele2 = document.getElementById('test')
-        ele2.classList.remove('border-white/30')
-        ele2.classList.add('border-red-500/20')
-        ele.classList.remove('border-white/30');
-        ele.classList.add('border-red-500', 'bg-red-500/20');
-        ele2.classList.remove('bg-white/10')
-        ele2.classList.add('bg-red-500/10')
-        const right = document.querySelector('div[data-val="'+ answerq +'"]')
-        right.classList.remove('bg-white/10')
-        right.classList.add('bg-green-500/30')
-        right.classList.remove('border-white/30')
-        right.classList.add('border-green-500/20')
-        test[currentQuestion].right--
-        test[currentQuestion].userans = 'w'
-        shufflehardtoclose(currentQuestion);
-        startTimer(2, 'red')
-        wrongq++
-    }
-    updatecount()
-}
-function startTimer(seconds, color) {
-    clearInterval(timerInterval);
-    document.getElementById('test').classList.add('pointer-events-none')
-    timerBar.style.width = '100%';
-    
-
-    timerBar.classList.remove('bg-red-500/10', 'bg-green-500/10'); 
-    
-    const colorName = color || 'green';
-    timerBar.classList.add(`bg-${colorName}-500/10`);
-    
-    const totalTime = seconds * 1000; 
-    let timeLeft = totalTime;
-    const intervalRate = 10; 
-
-    timerInterval = setInterval(() => {
-        timeLeft -= intervalRate;
-        const percentage = (timeLeft / totalTime) * 100;
-        timerBar.style.width = `${percentage}%`;
-
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            timerBar.style.width = '0%';
+        async function getcards(name) {
+            userStats = await fetchAndBuildJSON();
             
-            document.getElementById('test').classList.remove('pointer-events-none')
-            showtestquestion(++currentQuestion);
-            
-            const ele2 = document.getElementById('test');
-            ele2.classList.remove('border-red-500/20', 'border-green-500/20', 'bg-green-500/10', 'bg-red-500/10');
-            ele2.classList.add('border-white/30', 'bg-white/10');
+            if(!user || user === "null" || user === "undefined"){
+                await fetch(`/api/cards`)
+                .then(response => response.json())
+                .then(async(data) => {
+                    cardSet = data.find(c => c.Title === name);
+                    if (cardSet && cardSet.content && cardSet.content.length > 0) {
+                        currentIndex = 0;
+                        showingFront = true;
+                        showCard(currentIndex);
+                        await generatetest();
+                    }
+                });
+            }
+            else{
+                await fetch(`/api/allcards?user=${user}&title=${title}`)
+                .then(response => response.json())
+                .then(async (data) => {
+                    cardSet = data[0]
+                    if (cardSet && cardSet.content && cardSet.content.length > 0) {
+                        currentIndex = 0;
+                        showingFront = true;
+                        showCard(currentIndex);
+                        await generatetest();
+                    }
+                });
+            }
         }
-    }, intervalRate);
-}
 
-getcards(setname);
-function truncateToDetails(text, lineLimit = 3) {
-    if (text.startsWith('data:image') || text.startsWith('http')) return text;
-    
-    // Split logic... (same as before)
-    const lines = text.split(/<br\s*\/?>/i);
-    if (lines.length <= lineLimit) return text;
+        function switchmode(mode) {
+            // IDs adjusted for the new layout (Nav buttons are separated now)
+            const testElements = ['test'];
+            const cardElements = ['card-container', 'prev-button', 'next-button'];
+            const blockElements = ['blockframe'];
+            
+            // Nav buttons visibility logic
+            const nav = document.getElementById('nav-buttons');
+            
+            // Helper to toggle display
+            const setDisplay = (ids, val) => ids.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = val;
+            });
 
-    const visibleLines = lines.slice(0, lineLimit).join('<br>');
-    const hiddenLines = lines.slice(lineLimit).join('<br>');
+            currentmode = mode;
 
-    return `
-        <span>${visibleLines}</span>
-        <details class="mt-2 cursor-pointer text-sm text-white/60" onclick="event.stopPropagation()">
-            <summary class="hover:text-white text-white">Show More...</summary>
-            <div class="mt-1 text-white border-t border-white/10 pt-1">${hiddenLines}</div>
-        </details>
-    `;
-}
-function shufflehardtoclose(currentIndex, gap = 4) {
-    const recentMistakes = test.filter((q, index) => q.userans === 'w' && index <= currentIndex);
+            if (mode === 'test') {
+                setDisplay(testElements, 'flex'); // Flex for column layout
+                setDisplay(cardElements, 'none');
+                setDisplay(blockElements, 'none');
+                nav.style.display = 'grid'; // Keep nav buttons in test mode
+            }
+            else if (mode === 'block') {
+                setDisplay(blockElements, 'block');
+                setDisplay(testElements, 'none');
+                setDisplay(cardElements, 'none');
+                nav.style.display = 'none'; // Hide next/prev in game mode
+            }
+            else {
+                setDisplay(cardElements, 'block');
+                setDisplay(testElements, 'none');
+                setDisplay(blockElements, 'none');
+                nav.style.display = 'grid';
+            }
+        }
 
-    recentMistakes.forEach(mistake => {
-        const reQueue = { ...mistake, userans: '', right: 0 }; 
-        
-        const insertAt = Math.min(currentIndex + gap + Math.floor(Math.random() * 2), test.length);
+        async function generatetest() {
+            if (!cardSet || !cardSet.content) return;
 
-        test.splice(insertAt, 0, reQueue);
-        
-        mistake.userans = 're-queued'; 
-    });
+            const qHeader = document.getElementById('q');
+            const originalText = "Question";
+            qHeader.innerHTML = "<div class='text-center w-full'><h1 class='text-xl'>Loading AI Test...</h1><p class='text-sm opacity-70 mt-2'>Processing cards...</p></div>";
+            document.getElementById('options').innerHTML = '';
+            
+const workerCode = `
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+        env.allowLocalModels = false;
 
-    const progress = document.getElementById('test-p');
-    progress.setAttribute('max', test.length);
-}
-function shuffletest(){
-    test.sort(() => Math.random() - 0.5);
-    currentQuestion = 0;
-    showtestquestion(0);
-}
-window.addEventListener('beforeunload', (event) => {
-    let test2 = [];
-    test.forEach(function(item) {
-        if (item['userans'] !== '' && item['userans'] !== 're-queued') {
-            let data = {
-                setname : setname,
-                question: item.question.startsWith('data:') ? 'image' : item.question,
-                answer: item.answer.startsWith('data:') ? 'image' : item.answer, 
-                options: item.options.map(opt => opt.startsWith('data:') ? 'image' : opt),
-                userans: item.userans,
-                right: item.right,
-                ...(item.right > 1 && { percent: ((item.right / test.length) * 100).toFixed(0) + '%' })
+        let extractor = null;
+
+        function dotProduct(a, b) {
+            return a.reduce((sum, val, i) => sum + val * b[i], 0);
+        }
+
+        self.onmessage = async (e) => {
+            const { content } = e.data;
+            if (!extractor) {
+                extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+            }
+
+            // Extract all unique potential text answers for distraction
+            const textAnswers = content
+                .map(c => c.answer)
+                .filter(ans => ans && !ans.startsWith('data:image') && !ans.startsWith('http'));
+
+            const embeddingsMap = new Map();
+            for (const text of textAnswers) {
+                if (!embeddingsMap.has(text)) {
+                    const output = await extractor(text, { pooling: 'mean', normalize: true });
+                    embeddingsMap.set(text, Array.from(output.data));
+                }
+            }
+
+            const test = [];
+            for (let i = 0; i < content.length; i++) {
+                const currentData = content[i];
+                const isImage = currentData.answer.startsWith('data:image') || currentData.answer.startsWith('http');
                 
-            };
-            test2.push(data);
-        }
-    });
+                let options = [];
+                const currentVec = embeddingsMap.get(currentData.answer);
 
-    if (test2.length > 0 || rightq > 0 || wrongq > 0) {
-        const payload = JSON.stringify({
-            setname: setname,
-            right: rightq, 
-            wrong: wrongq,
-            test: test2
-        });
-        const success = navigator.sendBeacon('/api/savetest', new Blob([payload], { type: 'application/json' }));
-        
-        if (!success) {
-            console.error("Beacon failed: Data too large or browser rejected.");
+                if (isImage || !currentVec) {
+                    // Filter out duplicates and the correct answer itself
+                    const uniquePool = [...new Set(content.map(c => c.answer))]
+                        .filter(ans => ans !== currentData.answer);
+
+                    options = uniquePool
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, 3);
+                } else {
+                    let scored = [];
+                    // Using a Map for scored ensures we don't score the same text twice
+                    embeddingsMap.forEach((vec, text) => {
+                        if (text === currentData.answer) return;
+                        
+                        const score = dotProduct(currentVec, vec);
+                        // 0.98 threshold helps avoid choosing synonyms/exact duplicates
+                        if (score < 0.98) {
+                            scored.push({ text, score });
+                        }
+                    });
+
+                    // Sort by similarity (highest score first) and pick the top 3
+                    options = scored
+                        .sort((a, b) => b.score - a.score)
+                        .map(d => d.text)
+                        .slice(0, 3);
+                }
+
+                test.push({
+                    question: currentData.question || currentData.image,
+                    answer: currentData.answer || currentData.image,
+                    options: options, // This will naturally be 0-3 items long
+                    userans: '',
+                    right: 0,
+                    isHard: false
+                });
+            }
+            self.postMessage(test);
+        };
+    `;
+
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+            const worker = new Worker(workerUrl, { type: 'module' });
+
+            worker.postMessage({ content: cardSet.content });
+
+            worker.onmessage = (e) => {
+                test = e.data;
+                qHeader.innerText = originalText;
+                if (typeof shuffletest === "function") shuffletest();
+                URL.revokeObjectURL(workerUrl);
+                worker.terminate();
+            };
+
+            worker.onerror = (err) => {
+                console.error("Worker error:", err);
+                qHeader.innerText = "Error in AI processing.";
+            };
         }
-    }
-});
-</script>
+
+        function showtestquestion(index){
+            if (!test || index < 0 || index >= test.length) return;
+            
+            currentQuestion = index;
+            const progress = document.getElementById('test-p');
+            progress.setAttribute('value', index);
+
+            const q = test[index];
+            const parent = document.getElementById('options');
+            const question = document.getElementById('q');
+
+            let alloptions = [...q.options, q.answer];
+            alloptions.sort(() => Math.random() - 0.5);
+
+            question.innerHTML = q.question.startsWith('data:image') 
+                ? `<img src="${q.question}" class="max-h-[150px] mx-auto rounded-lg shadow-md">` 
+                : q.question;
+
+            parent.innerHTML = '';
+
+            alloptions.forEach(opt => {
+                const safeValue = opt.replace(/"/g, '&quot;'); 
+                parent.innerHTML += `
+                    <div 
+                        data-val="${safeValue}" 
+                        class="bg-white/20 rounded-lg border border-white/30 flex flex-col items-center justify-center hover:bg-white/30 active:bg-white/40 hover:cursor-pointer p-4 transition-all min-h-[60px]" 
+                        onclick="check(this)"
+                    >
+                        <div class="pointer-events-none text-center text-sm md:text-base w-full break-words">
+                            ${truncateToDetails(opt)}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function check(ele){
+            if(document.getElementById('test').classList.contains('pointer-events-none')) return;
+
+            const allOptions = document.getElementById('options').children;
+            for (let child of allOptions) {
+                child.classList.remove('border-green-500', 'border-red-500', 'bg-green-500/20', 'bg-red-500/20');
+                child.classList.add('border-white/30');
+            }
+
+            let selected = ele.getAttribute('data-val');
+            let answerq = test[currentQuestion].answer;
+
+            const testContainer = document.getElementById('test');
+
+            if (selected === answerq) {
+                ele.classList.remove('border-white/30');
+                ele.classList.add('border-green-500', 'bg-green-500/20');
+                
+                testContainer.classList.remove('bg-white/10', 'border-white/30');
+                testContainer.classList.add('bg-green-500/10', 'border-green-500/20');
+                
+                // Find and highlight correct answer (visual reinforcement)
+                const right = document.querySelector(`div[data-val="${answerq.replace(/"/g, '&quot;')}"]`);
+                if(right) {
+                    right.classList.remove('bg-white/10', 'border-white/30');
+                    right.classList.add('bg-green-500/30', 'border-green-500/20');
+                }
+
+                startTimer(2, 'green');
+                test[currentQuestion].right++;
+                test[currentQuestion].userans = 'r';
+                rightq++;
+                
+                if (block){
+                    switchmode('block');
+                    document.getElementById('blockBtn').style.opacity = '1';
+                    document.getElementById('blockBtn').style.pointerEvents = 'auto';
+                }
+            } else {
+                testContainer.classList.remove('border-white/30', 'bg-white/10');
+                testContainer.classList.add('border-red-500/20', 'bg-red-500/10');
+                
+                ele.classList.remove('border-white/30');
+                ele.classList.add('border-red-500', 'bg-red-500/20');
+                
+                const right = document.querySelector(`div[data-val="${answerq.replace(/"/g, '&quot;')}"]`);
+                if(right){
+                    right.classList.remove('bg-white/10', 'border-white/30');
+                    right.classList.add('bg-green-500/30', 'border-green-500/20');
+                }
+
+                test[currentQuestion].right--;
+                test[currentQuestion].userans = 'w';
+                shufflehardtoclose(currentQuestion);
+                startTimer(2, 'red');
+                wrongq++;
+            }
+            updatecount();
+        }
+
+        function startTimer(seconds, color) {
+            clearInterval(timerInterval);
+            document.getElementById('test').classList.add('pointer-events-none');
+            timerBar.style.width = '100%';
+            
+            timerBar.classList.remove('bg-red-500/10', 'bg-green-500/10'); 
+            const colorName = color || 'green';
+            timerBar.classList.add(`bg-${colorName}-500`); // Made slightly brighter for visibility
+            
+            const totalTime = seconds * 1000; 
+            let timeLeft = totalTime;
+            const intervalRate = 10; 
+            
+            timerInterval = setInterval(() => {
+                timeLeft -= intervalRate;
+                const percentage = (timeLeft / totalTime) * 100;
+                //timerBar.style.width = `${percentage}%`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerBar.style.width = '0%';
+                    
+                    showtestquestion(++currentQuestion);
+                    document.getElementById('test').classList.remove('pointer-events-none');
+                    
+                    const el = document.getElementById('test');
+                    el.classList.remove('border-red-500/20', 'border-green-500/20', 'bg-green-500/10', 'bg-red-500/10');
+                    el.classList.add('border-white/30', 'bg-white/10');
+                }
+            }, intervalRate);
+        }
+
+        function truncateToDetails(text, lineLimit = 3) {
+            if (text.startsWith('data:image') || text.startsWith('http')) return text;
+            
+            // Adjusted logic to just return text if short enough to prevent messy details on mobile
+            if(text.length < 50) return text;
+
+            const lines = text.split(/<br\s*\/?>/i);
+            // If it's just long text without breaks, let css wrap it, but if it has strict breaks:
+            if (lines.length <= lineLimit) return text;
+
+            const visibleLines = lines.slice(0, lineLimit).join('<br>');
+            const hiddenLines = lines.slice(lineLimit).join('<br>');
+
+            return `
+                <span>${visibleLines}</span>
+                <details class="mt-2 cursor-pointer text-xs text-blue-200" onclick="event.stopPropagation()">
+                    <summary class="hover:text-white">Show More</summary>
+                    <div class="mt-1 text-white border-t border-white/10 pt-1 text-left">${hiddenLines}</div>
+                </details>
+            `;
+        }
+
+        function shufflehardtoclose(currentIndex, gap = 2) {
+            const recentMistakes = test.filter((q, index) => q.userans === 'w' && index <= currentIndex);
+            recentMistakes.forEach(mistake => {
+                const reQueue = { ...mistake, userans: '', right: 0 }; 
+                const insertAt = Math.min(currentIndex + gap + Math.floor(Math.random() * 2), test.length);
+                test.splice(insertAt, 0, reQueue);
+                mistake.userans = 're-queued'; 
+            });
+            const progress = document.getElementById('test-p');
+            progress.setAttribute('max', test.length);
+        }
+
+        function shuffletest() {
+            test.sort(() => Math.random() - 0.5);
+            test.sort((a, b) => {
+                if (a.isHard && !b.isHard) return -1;
+                if (!a.isHard && b.isHard) return 1; 
+                return 0;
+            });
+
+            currentQuestion = 0;
+            const progress = document.getElementById('test-p');
+            progress.setAttribute('max', test.length);
+            showtestquestion(0);
+        }
+
+        window.addEventListener('beforeunload', (event) => {
+            let test2 = [];
+            test.forEach(function(item) {
+                if (item['userans'] !== '' && item['userans'] !== 're-queued') {
+                    let data = {
+                        setname: setname,
+                        question: item.question.startsWith('data:') ? 'image' : item.question,
+                        answer: item.answer.startsWith('data:') ? 'image' : item.answer, 
+                        options: item.options.map(opt => opt.startsWith('data:') ? 'image' : opt),
+                        userans: item.userans,
+                        right: item.right
+                    };
+                    test2.push(data);
+                }
+            });
+
+            if (test2.length > 0 || rightq > 0 || wrongq > 0) {
+                const payload = JSON.stringify({
+                    setname: setname,
+                    right: rightq, 
+                    wrong: wrongq,
+                    test: test2,
+                    ...(rightq > 1 && { percent: parseInt(((rightq / (rightq + wrongq)) * 100).toFixed(0))})
+                });
+                navigator.sendBeacon('/api/savetest', new Blob([payload], { type: 'application/json' }));
+            }
+        });
+        
+        // Trigger start
+        getcards(setname);
+    </script>
+</body> 
+</html>
