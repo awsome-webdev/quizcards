@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, Response, stream_with_context
+from flask import Flask, request, jsonify, render_template, redirect, url_for, Response, stream_with_context, send_file
 import json
 import os
 import re
@@ -302,7 +302,9 @@ def search(query, type="web"):
     else:
         return None
 import json
-
+@app.route('/favicon')
+def favicon():
+    return send_file('favicon.png')
 @app.route('/api/createwithai')
 def createai():
     message = request.args.get('message')

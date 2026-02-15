@@ -519,9 +519,9 @@ const workerCode = `
             document.getElementById('test').classList.add('pointer-events-none');
             timerBar.style.width = '100%';
             
-            timerBar.classList.remove('bg-red-500/10', 'bg-green-500/10'); 
-            const colorName = color || 'green';
-            timerBar.classList.add(`bg-${colorName}-500`); // Made slightly brighter for visibility
+            //timerBar.classList.remove('bg-red-500/10', 'bg-green-500/10'); 
+            //const colorName = color || 'green';
+            //timerBar.classList.add(`bg-${colorName}-500`); // Made slightly brighter for visibility
             
             const totalTime = seconds * 1000; 
             let timeLeft = totalTime;
