@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, Response, stream_with_context, send_file
+from flask import Flask, request, jsonify, render_template, redirect, stream_with_context, url_for, Response, stream_with_context, send_file
 import json
 import os
 import re
@@ -271,16 +271,23 @@ if OpenRouter:
         server_url="https://ai.hackclub.com/proxy/v1",
     )
 
+import time
+
 def ask(prompt):
     if not client: return "AI Client not initialized"
-    response = client.chat.send(
-        model="google/gemini-3-flash-preview",
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        stream=False,
-    )
-    return response.choices[0].message.content
+    
+    try:
+        response = client.chat.send(
+            model="google/gemini-3-flash-preview",
+            messages=[{"role": "user", "content": prompt}],
+            stream=False,
+        )
+        return response.choices[0].message.content
+        
+    except Exception as e:
+        if "429" in str(e) or "rate limit" in str(e).lower():
+            return "Rate limit reached. Please wait a moment."
+        return f"An error occurred: {str(e)}"
 
 def search(query, type="web"):
     headers = {"Authorization": f"Bearer {search_key}"}
@@ -307,57 +314,97 @@ def favicon():
     return send_file('favicon.png')
 @app.route('/api/createwithai')
 def createai():
+    # 1. Grab all arguments before entering the generator context
     message = request.args.get('message')
-    if not message:
-        return json.dumps({"error": "No prompt provided"}), 400
+    target_questions = request.args.get('target', 5)
+    existingcards = request.args.get('cards', '[]')
 
-    accumulated_context = ""
-    max_iterations = 4  # Increased slightly to allow for deep research
-    target_questions = request.args.get('target')
-    for i in range(max_iterations):
-        # The prompt defines two clear 'tools' for the AI: SEARCH or EXIT
-        agent_prompt = f"""
-        Topic: {message}
-        Research so far: {accumulated_context if accumulated_context else "No data yet."}
+    @stream_with_context
+    def generate():
+        # Validation
+        if not message:
+            yield f"data: {json.dumps({'error': 'No prompt provided'})}\n\n"
+            return
 
-        You are a research assistant. You must gather enough data to try and create {target_questions} educational flashcards.
-        Each card's answer MUST contain 3 distinct facts separated by <br> tags.
+        accumulated_context = ""
+        max_iterations = 10
 
-        YOUR OPTIONS:
-        1. If you need more info, reply with: SEARCH: [QUERY max of 5 words]
-        2. If you have sufficient info, reply with: EXIT: [{{ "question": "...", "answer": "Back of card/definition/facts", "image": null }}, ...]
+        try:
+            for i in range(max_iterations):
+                yield f"data: {json.dumps({'status': f'Step {i+1}: Making your set...'})}\n\n"
 
-        Choose one and return nothing else.
-        """
-        ai_response = ask(agent_prompt).strip()
-
-        # OPTION 1: AI wants more data
-        if ai_response.startswith("SEARCH:"):
-            query = ai_response.replace("SEARCH:", "").strip().strip('"')
-            search_results = search(query, type="web")
-            
-            # Format and add to context
-            for res in search_results[:2]:
-                accumulated_context += f"\nSource: {res.get('title')}\nContent: {res.get('snippet')}\n"
-            continue 
-
-        # OPTION 2: AI calls the EXIT function
-        if ai_response.startswith("EXIT:"):
-            try:
-                # Extract the JSON part after the EXIT: prefix
-                raw_json = ai_response.split("EXIT:", 1)[1].strip()
-                # Clean potential markdown backticks
-                clean_json = raw_json.replace("```json", "").replace("```", "").strip()
+                agent_prompt = f"""
                 
-                card_set = json.loads(clean_json)
-                return json.dumps(card_set)
-            except (ValueError, IndexError, json.JSONDecodeError) as e:
-                print(f"Exit parsing error on iteration {i}: {e}")
-                # If it failed to format JSON correctly, let it try one more time
-                accumulated_context += "\nSystem Note: Your last EXIT call had invalid JSON formatting. Please try again."
-                continue
+                        Topic: {message}
+                
+                        Research so far: {accumulated_context if accumulated_context else "No data yet."}
+                
+                
+                
+                        You are a research assistant. You must gather enough data to try and create {target_questions} educational flashcards.
+                
+                        Each card's answer MUST contain 3 distinct facts separated by <br> tags.
+                
+                        these are the cards that already exist: {existingcards}
+                
+                        make sure to never duplicate or included already included info.
+                
+                        You only have 10 iterations before you stop make sure to plan acccordingly
+                
+                        YOUR OPTIONS:
+                
+                        1. If you need more info, reply with: SEARCH: [QUERY max of 5 words]
+                
+                        2. If you have sufficient info, reply with: EXIT: [{{ "question": "...", "answer": "Back of card/definition/facts", "image": null }}, ...]
+                
+                
 
-    return json.dumps({"error": "AI reached iteration limit without calling EXIT properly"}), 500
+                        Choose one and return nothing else.
+                        This is iteration {i}
+                        """
+
+                # Call your existing 'ask' function
+                ai_response = ask(agent_prompt).strip()
+
+                if "rate limit reached" in ai_response.lower():
+                    yield f"data: {json.dumps({'error': 'Rate limited by AI provider'})}\n\n"
+                    return
+
+                # OPTION 1: SEARCH
+                if ai_response.startswith("SEARCH:"):
+                    query = ai_response.replace("SEARCH:", "").strip().strip('"')
+                    yield f"data: {json.dumps({'status': f'Searching for: {query}'})}\n\n"
+                    
+                    search_results = search(query, type="web")
+                    for res in search_results[:2]:
+                        accumulated_context += f"\nSource: {res.get('title')}\nContent: {res.get('snippet')}\n"
+                    continue 
+
+                # OPTION 2: EXIT (Success)
+                if ai_response.startswith("EXIT:"):
+                    raw_json = ai_response.split("EXIT:", 1)[1].strip()
+                    clean_json = raw_json.replace("```json", "").replace("```", "").strip()
+                    
+                    try:
+                        card_set = json.loads(clean_json)
+                        yield f"data: {json.dumps({'status': 'complete', 'cards': card_set})}\n\n"
+                        return
+                    except json.JSONDecodeError:
+                        yield f"data: {json.dumps({'status': 'AI malformed JSON, retrying...'})}\n\n"
+                        accumulated_context += "\nSystem Note: Your last EXIT call had invalid JSON. Try again."
+                        continue
+
+            # If we exit the loop without returning
+            exitcards = ask(agent_prompt + "\n This is your last iteration make the cards in JSON and only the json")
+                    
+            card_set = json.loads(exitcards)
+            yield f"data: {json.dumps({'status': 'complete', 'cards': card_set})}\n\n"
+            return
+
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream')
 @app.route('/api/savetest', methods=["POST"])
 def savetest():
     incoming_data = request.json
@@ -692,4 +739,4 @@ def login():
     return render_template("login.html")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    app.run(debug=True, port=5000, host='0.0.0.0', threaded=True)

@@ -107,17 +107,32 @@ aiDiv.style.top = offset + 'px';
             }
         }
         async function createwithai(){
-            const message = document.getElementById('Ai-message')
-            const target = document.getElementById('target')
-            setaistatus('Creating your set...')
-            await fetch(`/api/createwithai?message=${message.value}&target=${target.value}`).then(res => res.json()).then(data => {
-                data.forEach(card => {
-                    createCard(term=card.question, definition=card.answer)
-                })
-            }).catch(err => console.error("Error:", err));
-            setaistatus('DONE!', time=2000)
-            message.value = ''
-            target.value = 0
+            const message = document.getElementById('Ai-message').value
+            const target = document.getElementById('target').value
+            const params = new URLSearchParams({
+                message: message,
+                target: target,
+                cards: parsecards()
+            });
+
+            const eventSource = new EventSource(`/api/createwithai?${params.toString()}`);
+
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+
+                if (data.status === 'complete') {
+                    console.log("Success! Cards:", data.cards);
+                    data.cards.forEach(card =>{
+                        createCard(card.question, card.answer)
+                    })
+                    eventSource.close();
+                } else if (data.error) {
+                    alert("Error: " + data.error);
+                    eventSource.close();
+                } else {
+                    setaistatus(data.status)
+                }
+            };
         }
         function fileToDataUrl(file) {
             return new Promise((resolve, reject) => {
@@ -336,7 +351,31 @@ aiDiv.style.top = offset + 'px';
             }
         }
         });
-    
+        function parsecards(){
+            const cards = [];
+            
+            document.querySelectorAll('.card-item').forEach(cardEl => {
+                const question = cardEl.querySelector('.term-input').value.trim();
+                const answer = cardEl.querySelector('.definition-input').value.trim();
+                const image = cardEl.dataset.imageUrl || null;
+
+                if (question || answer) {
+                    cards.push({ 
+                        question, 
+                        answer, 
+                        image 
+                    });
+                }
+            });
+
+
+            const deckData = {
+                "content": cards
+            };
+
+            console.log("Saving Deck with Images:", deckData);
+            return JSON.stringify(deckData.content)
+    }
     </script>
 </body>
 </html>
