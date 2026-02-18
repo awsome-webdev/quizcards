@@ -126,6 +126,7 @@ aiDiv.style.top = offset + 'px';
                         createCard(card.question, card.answer)
                     })
                     eventSource.close();
+                    setaistatus(data.status, 5000)
                 } else if (data.error) {
                     alert("Error: " + data.error);
                     eventSource.close();

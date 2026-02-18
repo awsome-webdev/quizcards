@@ -329,41 +329,39 @@ def createai():
             return
 
         accumulated_context = ""
-        max_iterations = 10
+        max_iterations = 20
 
         try:
             for i in range(max_iterations):
-                yield f"data: {json.dumps({'status': f'Step {i+1}: Making your set...'})}\n\n"
 
                 agent_prompt = f"""
-                
-                        Topic: {message}
-                
-                        Research so far: {accumulated_context if accumulated_context else "No data yet."}
-                
-                
-                
-                        You are a research assistant. You must gather enough data to try and create {target_questions} educational flashcards.
-                
-                        Each card's answer MUST contain 3 distinct facts separated by <br> tags.
-                
-                        these are the cards that already exist: {existingcards}
-                
-                        make sure to never duplicate or included already included info.
-                
-                        You only have 10 iterations before you stop make sure to plan acccordingly
-                
-                        YOUR OPTIONS:
-                
-                        1. If you need more info, reply with: SEARCH: [QUERY max of 5 words]
-                
-                        2. If you have sufficient info, reply with: EXIT: [{{ "question": "...", "answer": "Back of card/definition/facts", "image": null }}, ...]
-                
-                
+                Topic: {message}
+                Research so far: {accumulated_context if accumulated_context else "No data yet."}
 
-                        Choose one and return nothing else.
-                        This is iteration {i}
-                        """
+                You are an AI agent that is for making educational flashcards for a flash card website. You must gather enough data to try and create {target_questions} more or start creating educational flashcards.
+                These are the cards that already exist: {existingcards}
+                Make sure to never duplicate or include already included info.
+                You only have {max_iterations} iterations. This is iteration {i+1}.
+                try to mostly use the information from the search to create the cards.
+
+                INSTRUCTIONS:
+                First, briefly write out your reasoning/thought process.
+                Then, you MUST call exactly ONE of the following functions at the end of your response:
+
+                1. search("your search query")
+                   - Use this to get more info. Max 5 words.
+                2. exit([{{ "question": "...", "answer": "...", "image": null }}, ...])
+                   - Use this when you have sufficient info. Pass the JSON array of cards as the argument.
+                3.fetch("url")
+                    - Use this to fetch raw html from a website when you gather links from searches.
+                4.respond("status update")
+                    - Use this to send a snippet of text to the user to tell them what is happenning make sure to include this in all your responses so the user knows what you are doing.
+                NEVER dont include a respond() in your response, this is how you will communicate to the user. Always include a respond() with a message about what you are doing. If you are searching include what you are searching for, if you are fetching include what you are fetching, if you are exiting include that you are exiting and how many cards you have created.
+                Example Response:
+                I need to find out the population of France to finish the last card.
+                search("population of France")
+                respond("Searching for population of France to finish card 5")
+                """
 
                 # Call your existing 'ask' function
                 ai_response = ask(agent_prompt).strip()
@@ -372,19 +370,21 @@ def createai():
                     yield f"data: {json.dumps({'error': 'Rate limited by AI provider'})}\n\n"
                     return
 
-                # OPTION 1: SEARCH
-                if ai_response.startswith("SEARCH:"):
-                    query = ai_response.replace("SEARCH:", "").strip().strip('"')
-                    yield f"data: {json.dumps({'status': f'Searching for: {query}'})}\n\n"
+                # --- REGEX PARSING FOR FUNCTIONS ---
+                # re.DOTALL ensures .* matches across multiple lines (crucial for JSON arrays)
+                exit_match = re.search(r'exit\((.*)\)', ai_response, re.DOTALL)
+                search_match = re.search(r'search\([\'"](.*?)[\'"]\)', ai_response)
+                fetch_match = re.search(r'fetch\([\'"](.*?)[\'"]\)', ai_response)
+                respond_match = re.search(r'respond\([\'"](.*?)[\'"]\)', ai_response)
+                if not respond_match.group(1).strip():
+                    respond_match = 'Thinking...'
+                # OPTION 1: EXIT (Success)
+                if exit_match:
+                    raw_json = exit_match.group(1).strip()
+                    # Extract the reasoning by removing the function call from the total string
+                    reasoning = ai_response.replace(exit_match.group(0), "").strip()
                     
-                    search_results = search(query, type="web")
-                    for res in search_results[:2]:
-                        accumulated_context += f"\nSource: {res.get('title')}\nContent: {res.get('snippet')}\n"
-                    continue 
 
-                # OPTION 2: EXIT (Success)
-                if ai_response.startswith("EXIT:"):
-                    raw_json = ai_response.split("EXIT:", 1)[1].strip()
                     clean_json = raw_json.replace("```json", "").replace("```", "").strip()
                     
                     try:
@@ -393,20 +393,65 @@ def createai():
                         return
                     except json.JSONDecodeError:
                         yield f"data: {json.dumps({'status': 'AI malformed JSON, retrying...'})}\n\n"
-                        accumulated_context += "\nSystem Note: Your last EXIT call had invalid JSON. Try again."
+                        accumulated_context += "\nSystem Note: Your last exit() call had invalid JSON. Try again."
                         continue
 
-            # If we exit the loop without returning
-            exitcards = ask(agent_prompt + "\n This is your last iteration make the cards in JSON and only the json")
+                # OPTION 2: SEARCH
+                elif search_match:
+                    query = search_match.group(1).strip()
+                    # Extract the reasoning
+                    reasoning = ai_response.replace(search_match.group(0), "").strip()
                     
-            card_set = json.loads(exitcards)
-            yield f"data: {json.dumps({'status': 'complete', 'cards': card_set})}\n\n"
+                    yield f"data: {json.dumps({'status': respond_match.group(1).strip()})}\n\n"
+                    
+                    search_results = search(query, type="web")
+                    context = "\n\n".join(
+                        f"[{r.get('title')}]({r.get('url')})\n{r.get('description')}" 
+                        for r in search_results[:30]
+                    )
+                    accumulated_context += context
+                    continue 
+                # OPTION 3: FETCH
+                elif fetch_match:
+                    url = fetch_match.group(1).strip()
+                    reasoning = ai_response.replace(fetch_match.group(0), "").strip()
+                    
+                    
+                    yield f"data: {json.dumps({'status': respond_match.group(1).strip()})}\n\n"
+                    
+                    try:
+                        res = requests.get(url, timeout=5)
+                        if res.status_code == 200:
+                            accumulated_context += f"\nFetched Content from {url}:\n{res.text[:500]}\n"  # Limit to first 500 chars
+                        else:
+                            accumulated_context += f"\nFailed to fetch {url}: Status code {res.status_code}\n"
+                    except Exception as e:
+                        accumulated_context += f"\nError fetching {url}: {str(e)}\n"
+                    continue
+                # Fallback: The AI forgot to call a function
+                else:
+                    yield f"data: {json.dumps({'status': 'AI formatting error, correcting...'})}\n\n"
+                    accumulated_context += "\nSystem Note: You didn't call search(\"...\") or exit([...]). Please output a valid function call."
+                    continue
+            # If we exit the loop without returning (Max iterations reached)
+            exitcards = ask(agent_prompt + "\n This is your last iteration. You MUST use the exit([...]) function with the cards in JSON format.")
+            exit_match = re.search(r'exit\((.*)\)', exitcards, re.DOTALL)
+            
+            if exit_match:
+                clean_json = exit_match.group(1).replace("```json", "").replace("```", "").strip()
+                try:
+                    card_set = json.loads(clean_json)
+                    yield f"data: {json.dumps({'status': 'complete', 'cards': card_set})}\n\n"
+                except:
+                    yield f"data: {json.dumps({'error': 'Final output was not valid JSON.'})}\n\n"
+            else:
+                 yield f"data: {json.dumps({'error': 'Failed to generate cards within iteration limit.'})}\n\n"
             return
 
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-    return Response(generate(), mimetype='text/event-stream')
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 @app.route('/api/savetest', methods=["POST"])
 def savetest():
     incoming_data = request.json
