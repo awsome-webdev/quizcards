@@ -257,11 +257,13 @@ def load_user(user_id):
 # API Keys Setup
 ai_key = ""
 search_key = ""
+model = ""
 if os.path.exists('keys.json'):
     with open('keys.json') as f:
         keys = json.load(f)
         ai_key = keys[0]['hcai']
         search_key = keys[0]['hcsearch']
+        model = keys[0]['model']
 
 # Initialize AI Client if module exists
 client = None
@@ -278,7 +280,7 @@ def ask(prompt):
     
     try:
         response = client.chat.send(
-            model="google/gemini-3-flash-preview",
+            model=model,
             messages=[{"role": "user", "content": prompt}],
             stream=False,
         )
