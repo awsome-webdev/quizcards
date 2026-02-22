@@ -225,6 +225,7 @@ def parse_hybrid_quizlet_pdf(pdf_stream):
             })
 
     return title, final_cards
+
 class User(UserMixin):
     def __init__(self, id, username, password_hash):
         self.id = id
@@ -310,10 +311,11 @@ def search(query, type="web"):
         return data.get('news', {}).get('results', [])
     else:
         return None
-import json
+
 @app.route('/favicon')
 def favicon():
     return send_file('favicon.png')
+
 @app.route('/api/createwithai')
 def createai():
     # 1. Grab all arguments before entering the generator context
@@ -430,7 +432,7 @@ def createai():
                     continue
                 # Fallback: The AI forgot to call a function
                 else:
-                    yield f"data: {json.dumps({'status': 'AI formatting error, correcting...'})}\n\n"
+                    yield f"data: {json.dumps({'status': 'AI is thinking...'})}\n\n"
                     accumulated_context += "\nSystem Note: You didn't call search(\"...\") or exit([...]). Please output a valid function call."
                     continue
             # If we exit the loop without returning (Max iterations reached)
@@ -452,6 +454,7 @@ def createai():
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
 @app.route('/api/savetest', methods=["POST"])
 def savetest():
     incoming_data = request.json
@@ -475,14 +478,17 @@ def savetest():
         json.dump(current_stats, f, indent=4)
 
     return 'ok', 200
+
 @app.route('/allsets')
 @login_required
 def allsets():
     return render_template('allsets.html')
+
 @app.route('/blockblast')
 @login_required
 def blocks():
     return render_template('blockblast.html')
+
 @app.route('/api/allcards')
 def allcards():
     clear = request.args.get('clear')
@@ -524,7 +530,9 @@ def allcards():
                     return f'error {e}', 500
             else:
                 continue
-    return jsonify(send), 200
+    public_cards = [card for card in send if card.get('public', True) is True]
+    return jsonify(public_cards), 200
+
 @app.route('/api/wrong')
 def wrong():
     file = f'user_data/{current_user.id}/stats.json'
@@ -533,6 +541,7 @@ def wrong():
         return jsonify(data['wrong'])
     except Exception as e:
         return '0'
+
 @app.route('/api/right')
 def right():
     file = f'user_data/{current_user.id}/stats.json'
@@ -541,6 +550,7 @@ def right():
         return jsonify(data['right'])
     except Exception as e:
         return '0'
+
 @app.route('/api/getstats')
 def getstats():
     file = f'user_data/{current_user.id}/stats.json'
@@ -567,6 +577,7 @@ def getstats():
             return Response(stream_with_context(generate()), mimetype='application/json')
         except:
             return '{}', 200
+
 @app.route('/api/leaderboard')
 def leaderboard():
     root_dir = os.path.join(root, 'user_data') 
@@ -603,6 +614,7 @@ def leaderboard():
     leaderboard_list.sort(key=lambda x: x['right'], reverse=True)
     
     return jsonify(leaderboard_list), 200
+
 @app.route('/api/delete')
 def delete():
     name = request.args.get('name')
@@ -616,7 +628,47 @@ def delete():
     with open(f'user_data/{current_user.id}/cards.json', 'w') as f:
         json.dump(data, f, indent=4)
     return redirect(url_for('dash'))
+
+# --- NEW ROUTES ADDED HERE ---
+@app.route('/api/ispublic', methods=['GET'])
+@login_required
+def is_public():
+    title = request.args.get('name')
+    file_path = f'user_data/{current_user.id}/cards.json'
+    cards = readjson(file_path)
     
+    for card in cards:
+        if card.get('Title') == title:
+            status = card.get('public', True)
+            return 'True' if status else 'False'
+            
+    return 'False', 404
+
+@app.route('/api/setpublic', methods=['POST'])
+@login_required
+def set_public():
+    title = request.args.get('name')
+    is_public_str = request.args.get('public', 'false').lower()
+    is_public = is_public_str == 'true'
+    
+    file_path = f'user_data/{current_user.id}/cards.json'
+    cards = readjson(file_path)
+    updated = False
+    
+    for card in cards:
+        if card.get('Title') == title:
+            card['public'] = is_public
+            updated = True
+            break
+            
+    if updated:
+        with open(f'{root}{file_path}', 'w') as f:
+            json.dump(cards, f, indent=4)
+        return 'Status updated', 200
+    else:
+        return 'Card not found', 404
+# -----------------------------
+
 @app.route('/')
 @login_required
 def home():

@@ -33,6 +33,9 @@
     </body>
 </html>
 <script>
+setTimeout(function(){
+    udpatepubliccheckbox()
+}, 1000)
 loadcards();
 fetch('/api/wrong').then(res => res.text()).then(data => document.getElementById('wrong-text').textContent = data)
 fetch('/api/right').then(res => res.text()).then(data => document.getElementById('right-text').textContent = data)
@@ -61,16 +64,38 @@ fetch('/api/right').then(res => res.text()).then(data => document.getElementById
     }
     function createcard(Title, cards, desc) {
         const div = document.createElement("div");
-        div.className = "glass-panel rounded-lg m-10 p-6 hover:cursor-pointer h-full w-[20vw] grid grid-rows-[1fr_auto]"
+        div.className = "glass-panel rounded-lg m-10 p-6 hover:cursor-pointer h-full w-[20vw] grid grid-rows-[auto_1fr]"
         div.innerHTML = `
-        <div class="row-start-1 row-end-1" onclick="opencards('${Title}')">
+<div id="menu-${Title}" popover class="fixed w-40 bg-slate-800 border border-white/10 rounded-md shadow-2xl z-[100] py-2">
+    <div class="block w-full text-left px-4 py-2 hover:bg-white/10 text-sm"><input class="public-input" title="${Title}" type="checkbox" id="${Title}-check"><label for="${Title}-check">Public</label></div>
+    <button class="block w-full text-left px-4 py-2 hover:bg-white/10 text-sm" onclick="editcard('${Title}')">Edit</button>
+    <button class="block w-full text-left px-4 py-2 hover:bg-white/10 text-sm text-red-400" onclick="deleteset('${Title}')">Delete</button>
+</div>
+
+<div id="card-options" class="row-start-1 grid grid-cols-5 items-center">
+    <svg 
+onclick="
+        event.stopPropagation();
+        const m = document.getElementById('menu-${Title}');
+        // Position it FIRST
+        m.style.position = 'fixed';
+        m.style.margin = '0'; // Reset default popover margins
+        m.style.left = event.clientX + 'px';
+        m.style.top = event.clientY + 'px';
+        // Then show it
+        m.showPopover();
+    "
+        xmlns="http://www.w3.org/2000/svg" 
+        class="col-start-5 justify-self-end hover:bg-white/10 rounded-full p-1 cursor-pointer" 
+        height="30px" viewBox="0 -960 960 960" width="30px" fill="#e3e3e3">
+        <path d="M479.91-160q-24.24 0-41.41-17.26-17.17-17.26-17.17-41.5t17.26-41.41q17.27-17.16 41.5-17.16 24.24 0 41.41 17.26 17.17 17.26 17.17 41.5t-17.26 41.4Q504.14-160 479.91-160Zm0-261.33q-24.24 0-41.41-17.26-17.17-17.27-17.17-41.5 0-24.24 17.26-41.41 17.27-17.17 41.5-17.17 24.24 0 41.41 17.26 17.17 17.27 17.17 41.5 0 24.24-17.26 41.41-17.27 17.17-41.5 17.17Zm0-261.34q-24.24 0-41.41-17.26-17.17-17.26-17.17-41.5t17.26-41.4Q455.86-800 480.09-800q24.24 0 41.41 17.26 17.17 17.26 17.17 41.5t-17.26 41.41q-17.27 17.16-41.5 17.16Z"/>
+    </svg>
+</div>
+        <div class="row-start-2 row-end-2" onclick="opencards('${Title}')">
             <h2 class="text-2xl mb-4">${Title}</h2>
             <p class="text-white/70 text-xl">${cards} Cards</p>
             <br>
             <p class="text-white/70">${desc}</p>
-        </div>
-        <div class="row-start-2 grid grid-cols-2 gap-2">
-            <button class="bg-red-400/10 p-6 h-fit rounded-md bottom-[0px]" onclick="deleteset('${Title}')">Delete</button><button class="bg-orange-400/10 p-6 h-fit rounded-md bottom-[0px]" onclick="editcard('${Title}')">Edit</button>
         </div>
         `
         document.getElementById("cards").appendChild(div);
@@ -78,4 +103,36 @@ fetch('/api/right').then(res => res.text()).then(data => document.getElementById
     function editcard(title){
         window.location.href = `/create?edit=${title}`
     }
+function udpatepubliccheckbox() {
+    // 1. Use querySelectorAll to get a NodeList (which supports forEach)
+    const elements = document.querySelectorAll('.public-input');
+
+    elements.forEach(ele => {
+        // 2. Use 'const' so 'title' stays scoped to this specific checkbox
+        const title = ele.getAttribute('title');
+
+        // Initial sync with the server
+        fetch(`/api/ispublic?name=${encodeURIComponent(title)}`)
+            .then(res => res.text())
+            .then(data => {
+                ele.checked = (data === 'True');
+            });
+
+        // Event listener for changes
+        ele.addEventListener('change', () => {
+            const isPublic = ele.checked;
+            fetch(`/api/setpublic?name=${encodeURIComponent(title)}&public=${isPublic}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) {
+                        alert('Failed to update public status');
+                        ele.checked = !isPublic; 
+                    }
+                })
+                .catch(() => {
+                    alert('An error occurred while updating public status');
+                    ele.checked = !isPublic;
+                });
+        });
+    });
+}
 </script>
