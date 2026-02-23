@@ -17,6 +17,9 @@
 
     <script>
         // Load cards on startup
+        setTimeout(function(){
+            udpatepubliccheckbox()
+        }, 1000)
         loadcards();
 
         function opencards(setname) {
@@ -92,6 +95,38 @@
             `;
             document.getElementById("cards").appendChild(card);
         }
+        function udpatepubliccheckbox() {
+    // 1. Use querySelectorAll to get a NodeList (which supports forEach)
+    const elements = document.querySelectorAll('.public-input');
+
+    elements.forEach(ele => {
+        // 2. Use 'const' so 'title' stays scoped to this specific checkbox
+        const title = ele.getAttribute('title');
+
+        // Initial sync with the server
+        fetch(`/api/ispublic?name=${encodeURIComponent(title)}`)
+            .then(res => res.text())
+            .then(data => {
+                ele.checked = (data === 'True');
+            });
+
+        // Event listener for changes
+        ele.addEventListener('change', () => {
+            const isPublic = ele.checked;
+            fetch(`/api/setpublic?name=${encodeURIComponent(title)}&public=${isPublic}`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) {
+                        alert('Failed to update public status');
+                        ele.checked = !isPublic; 
+                    }
+                })
+                .catch(() => {
+                    alert('An error occurred while updating public status');
+                    ele.checked = !isPublic;
+                });
+        });
+    });
+}
     </script>
 </body>
 </html>
