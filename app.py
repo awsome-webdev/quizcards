@@ -4,7 +4,7 @@ import os
 import re
 import uuid
 import requests
-import fitz  # PyMuPDF
+import fitz  
 import base64
 from flask_login import (
     LoginManager, UserMixin,
@@ -478,7 +478,18 @@ def savetest():
         json.dump(current_stats, f, indent=4)
 
     return 'ok', 200
-
+@app.route('/api/getpercent')
+def getpercent():
+    title = request.args.get('title')
+    file = f'user_data/{current_user.id}/stats.json'
+    data = readjson(file)
+    try:
+        if title in data:
+            return jsonify(data[title])
+        else:
+            return jsonify([])
+    except Exception as e:
+        return jsonify([])
 @app.route('/allsets')
 @login_required
 def allsets():
