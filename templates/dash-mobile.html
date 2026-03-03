@@ -65,12 +65,15 @@
             total += parseInt(item)
         })
         avg = total / data.length || 0
-        avg = avg * (data.length / 10)
+        const confidence = data.length / (data.length + 2);
+        avg = (avg * confidence).toFixed(2);
         bg = avg > 80 ? 'bg-green-500/20' : avg > 45 ? 'bg-yellow-500/20' : 'bg-red-500/20'
             const card = document.createElement("div");
             // Modern glassmorphism style, flexible height for mobile
             card.className = "grid min-w-0 break-words grid-rows-[auto_1fr_auto]  border border-white/10 rounded-2xl overflow-hidden hover:border-white/30 transition-all";
             card.classList.add(bg)
+            card.setAttribute('title', avg > 80 ? `Your memory score is ${avg}` : avg > 45 ? `score: ${avg}, not bad needs improvment` : 'You really need to work on this');
+            card.setAttribute('title', avg > 80 ? 'Great job! Your average score is above 80%.' : avg > 45 ? 'Not bad! Your average score is above 45%.' : 'Needs improvement. Your average score is below 45%.');
             card.innerHTML = `
             <div id="menu-${Title}" popover class="fixed w-40 bg-slate-800 border border-white/10 rounded-md shadow-2xl z-[100] py-2">
                 <div class="block w-full text-left px-4 py-2 hover:bg-white/10 text-sm"><input class="public-input mr-2" title="${Title}" type="checkbox" id="${Title}-check"><label for="${Title}-check">Public</label></div>
@@ -102,7 +105,7 @@
                     <p class="text-gray-400 text-lg line-clamp-3">${desc || 'No description provided.'}</p>
                 </div>
                 </div class="row-start-3 row-end-3">
-                <progress value="${avg}" title="Your average percent" max="100" class="w-full h-2 rounded-full overflow-hidden">
+                <progress value="${avg}" title="Your memory score" max="100" class="w-full h-2 rounded-full overflow-hidden">
                 <div>
             `;
             document.getElementById("cards").appendChild(card);

@@ -70,9 +70,11 @@ fetch('/api/right').then(res => res.text()).then(data => document.getElementById
             total += parseInt(item)
         })
         avg = total / data.length || 0
-        avg = avg * (data.length / 10)
-        bg = avg > 80 ? 'bg-green-500/20' : avg > 45 ? 'bg-yellow-500/20' : 'bg-red-500/20'
+        const confidence = data.length / (data.length + 2);
+        avg = (avg * confidence).toFixed(2);
+        bg = avg > 80 ? 'bg-green-500/20' : avg > 45 ? 'bg-yellow-500/20' : 'bg-red-500/20'      
         const div = document.createElement("div");
+        div.setAttribute('title', avg > 80 ? `Your memory score is ${avg}` : avg > 45 ? `score: ${avg}, not bad needs improvment` : 'You really need to work on this');
         div.className = "glass-panel rounded-lg m-10 p-6 hover:cursor-pointer h-full w-[20vw] grid grid-rows-[auto_1fr_auto]"
         div.classList.add(bg)
         div.innerHTML = `
@@ -107,7 +109,7 @@ onclick="
             <br>
             <p class="text-white/70">${desc}</p>
         </div class="row-start-3 row-end-3">
-            <progress value="${avg}" title="Your average percent" max="100" class="w-full h-2 rounded-full overflow-hidden">
+            <progress value="${avg}" title="your memory score" max="100" class="w-full h-2 rounded-full overflow-hidden">
         <div>
         `
         document.getElementById("cards").appendChild(div);
