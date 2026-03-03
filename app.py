@@ -259,12 +259,14 @@ def load_user(user_id):
 ai_key = ""
 search_key = ""
 model = ""
+port = 5000
 if os.path.exists('keys.json'):
     with open('keys.json') as f:
         keys = json.load(f)
         ai_key = keys[0]['hcai']
         search_key = keys[0]['hcsearch']
         model = keys[0]['model']
+        port = keys[0]['port']
 
 # Initialize AI Client if module exists
 client = None
@@ -849,4 +851,4 @@ def login():
     return render_template("login.html")
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000, host='0.0.0.0', threaded=True)
+    app.run(debug=True, port=int(port), host='0.0.0.0', threaded=True)
