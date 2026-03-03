@@ -16,8 +16,7 @@ sudo apt update && sudo apt install -y python3-pip
 
 # 3. Install Requirements
 echo "Installing dependencies..."
-sudo pip install --upgrade pip
-sudo pip install -r "$PROJECT_DIR/requirements.txt"
+sudo pip install -r "$PROJECT_DIR/requirements.txt" --break-system-packages
 
 # 4. Create Systemd Service File
 echo "Creating systemd service..."
@@ -55,11 +54,13 @@ if [ "$answer" == "y" ]; then
     read -p "Hackclub search api key:" SEARCH_KEY
     read -p "Model to use for ai, it is recommended to use a fast one such as google/gemini-3-flash-preview:" MODEL
 cat <<EOF > $PROJECT_DIR/keys.json
+[
 {
     "hcai": "$AI_KEY",
     "hcsearch": "$SEARCH_KEY",
     "model": "$MODEL",
     "port": "$PORT"
 }
+]
 EOF
 fi
