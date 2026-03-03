@@ -49,7 +49,7 @@ exit
 fi 
 read -p "Want to configure the app now? (y/n): " answer
 if [ "$answer" == "y" ]; then
-    read -p "Port" PORT
+    read -p "Port:" PORT
     read -p "Hackclub ai api key:" AI_KEY
     read -p "Hackclub search api key:" SEARCH_KEY
     read -p "Model to use for ai, it is recommended to use a fast one such as google/gemini-3-flash-preview:" MODEL
@@ -63,4 +63,6 @@ cat <<EOF > $PROJECT_DIR/keys.json
 }
 ]
 EOF
+sudo systemctl restart $APP_NAME
+echo "Configuration complete, service restarted."
 fi
