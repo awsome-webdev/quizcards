@@ -458,6 +458,7 @@ def createai():
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @app.route('/api/savetest', methods=["POST"])
+@login_required
 def savetest():
     incoming_data = request.json
     file_path = f'{root}user_data/{current_user.id}/stats.json'
@@ -481,6 +482,7 @@ def savetest():
 
     return 'ok', 200
 @app.route('/api/getpercent')
+@login_required
 def getpercent():
     title = request.args.get('title')
     file = f'user_data/{current_user.id}/stats.json'
@@ -503,6 +505,7 @@ def sw(name):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return response
 @app.route('/api/getusername')
+@login_required
 def getusername():
     return current_user.username, 200
 @app.route('/allsets')
@@ -516,6 +519,7 @@ def blocks():
     return render_template('blockblast.html')
 
 @app.route('/api/allcards')
+@login_required
 def allcards():
     clear = request.args.get('clear')
     user = str(request.args.get('user'))
