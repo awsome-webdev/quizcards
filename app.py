@@ -564,8 +564,12 @@ def allcards():
     return jsonify(public_cards), 200
 
 @app.route('/api/wrong')
+@login_required
 def wrong():
-    file = f'user_data/{current_user.id}/stats.json'
+    try:
+        file = f'user_data/{current_user.id}/stats.json'
+    except Exception as e:
+        return 'Not logged in'
     data = readjson(file) 
     try:
         return jsonify(data['wrong'])
@@ -573,8 +577,12 @@ def wrong():
         return '0'
 
 @app.route('/api/right')
+@login_required
 def right():
-    file = f'user_data/{current_user.id}/stats.json'
+    try:
+        file = f'user_data/{current_user.id}/stats.json'
+    except Exception as e:
+        return 'Not logged in'
     data = readjson(file)
     try:
         return jsonify(data['right'])
@@ -582,6 +590,7 @@ def right():
         return '0'
 
 @app.route('/api/getstats')
+@login_required
 def getstats():
     file = f'user_data/{current_user.id}/stats.json'
     thres = 5 * 1024 * 1024
@@ -609,6 +618,7 @@ def getstats():
             return '{}', 200
 
 @app.route('/api/leaderboard')
+@login_required
 def leaderboard():
     root_dir = os.path.join(root, 'user_data') 
     
@@ -646,6 +656,7 @@ def leaderboard():
     return jsonify(leaderboard_list), 200
 
 @app.route('/api/delete')
+@login_required
 def delete():
     name = request.args.get('name')
     data = readjson(f'user_data/{current_user.id}/cards.json')
@@ -675,6 +686,7 @@ def is_public():
     return 'False', 404
 
 @app.route('/api/setpublic', methods=['POST'])
+@login_required
 @login_required
 def set_public():
     title = request.args.get('name')
